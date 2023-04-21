@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Python</title>
+    <script>
+        function runPython() {
+            const runLocation = document.getElementById("run-location").value;
+            fetch('/run_python2', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ run_location: runLocation }),
+            }).then(response => response.text())
+              .then(result => console.log(result))
+              .catch(error => console.log('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <button onclick="runPython()">Run Python</button>
+    <select id="run-location">
+        <option value="local">Local</option>
+        <option value="cluster">Cluster</option>
+    </select>
+</body>
+</html>
