@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+from src import plot
 
 app = Flask(__name__)
 
@@ -28,6 +29,12 @@ def run_python2():
         cluster_run()
 
     return "Python script has been executed"
+
+@app.route('/get_plot')
+def get_plot():
+    fig = plot.create_plot()
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+
 
 
 if __name__ == '__main__':

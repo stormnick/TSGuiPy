@@ -18,6 +18,25 @@
               .catch(error => console.log('Error:', error));
         }
     </script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    function loadPlot() {
+    $.getJSON('/get_plot', function(data) {
+        console.log(data); // Log the received data to the console
+
+        // Clear the plot-container
+        const plotContainer = document.getElementById('plot-container');
+        plotContainer.innerHTML = '';
+
+        // Reconstruct the plot using the received data and layout
+        Plotly.newPlot('plot-container', data.data, data.layout);
+    }).fail(function(jqxhr, textStatus, error) {
+        console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+    });
+    }
+
+    </script>
 </head>
 <body>
     <button onclick="runPython()">Run Python</button>
@@ -25,5 +44,11 @@
         <option value="local">Local</option>
         <option value="cluster">Cluster</option>
     </select>
+    <div id="plot-container"></div>
+
+    <button onclick="loadPlot()">Load Plot</button>
+
+
+
 </body>
 </html>
