@@ -5,6 +5,8 @@ from src import plot
 
 app = Flask(__name__)
 
+DEFAULT_CONFIG_PATH = 'default_config.cfg'
+
 
 def local_run():
     print("local")
@@ -46,6 +48,7 @@ def get_plot():
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
+    config_path = request.form.get('configPath', DEFAULT_CONFIG_PATH)
     if request.method == 'POST':
         config_data = {
             'folderPath': request.form['folderPath'],
@@ -54,33 +57,39 @@ def config():
             'numberInput': request.form['numberInput'],
             'textInput': request.form['textInput']
         }
-        save_config(config_data)
+        save_config(config_data, config_path)
         # Redirect or show a success message
     else:
-        config_data = load_config("config.cfg")
+        config_data = load_config(DEFAULT_CONFIG_PATH)
     # Render the form with config_data
-    return render_template('config.html', config=config_data)
+    print(config_data)
+    return render_template('config.html', config=config_data, default_config_path=DEFAULT_CONFIG_PATH)
 
 
-def save_config(config_data):
+def save_config(config_data, config_path):
+    if config_path == "":
+        # throw warning
+        return
     config = configparser.ConfigParser()
     config['DEFAULT'] = config_data
-    with open('config.cfg', 'w') as configfile:
+    with open(config_path, 'w') as configfile:
         config.write(configfile)
 
 
 @app.route('/load_config', methods=['POST'])
 def handle_load_config():
-    config_path = request.form.get('configPath', 'default_config.ini')
+    config_path = request.form.get('configPath', DEFAULT_CONFIG_PATH)
+    if config_path == "":
+        return render_template('config.html', warning="No config file selected", default_config_path=DEFAULT_CONFIG_PATH)
     config_data = load_config(config_path)
     # You might want to pass this config_data to render in the config form
-    return render_template('config.html', config=config_data)
+    return render_template('config.html', config=config_data, default_config_path=DEFAULT_CONFIG_PATH)
 
 
 def load_config(config_path):
     config = configparser.ConfigParser()
     config.read(config_path)
-    return config['DEFAULT']  # Assuming 'DEFAULT' section in config file
+    return dict(config['DEFAULT'])  # Assuming 'DEFAULT' section in config file
 
 
 if __name__ == '__main__':
