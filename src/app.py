@@ -51,19 +51,18 @@ def config():
     config_path = request.form.get('configPath', DEFAULT_CONFIG_PATH)
     if request.method == 'POST':
         config_data = {
-            'folderPath': request.form['folderPath'],
-            'filePath': request.form['filePath'],
-            'optionSelect': request.form['optionSelect'],
-            'numberInput': request.form['numberInput'],
-            'textInput': request.form['textInput']
+            'folderpath': request.form['folderPath'],
+            'filepath': request.form['filePath'],
+            'optionselect': request.form['optionSelect'],
+            'numberinput': request.form['numberInput'],
+            'textinput': request.form['textInput']
         }
         save_config(config_data, config_path)
         # Redirect or show a success message
     else:
         config_data = load_config(DEFAULT_CONFIG_PATH)
     # Render the form with config_data
-    print(config_data)
-    return render_template('config.html', config=config_data, default_config_path=DEFAULT_CONFIG_PATH)
+    return render_template('config.html', config=config_data, default_config_path=config_path)
 
 
 def save_config(config_data, config_path):
