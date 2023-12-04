@@ -9,7 +9,8 @@
 <body>
     <div class="container mt-5">
         <h2>Config File Creator</h2>
-        <form action="/save_config" method="post">
+        <a href="/" class="btn btn-secondary mt-3">Go Back to Home Page</a>
+        <form action="/config" method="post">
             <div class="form-group">
                 <label for="folderPath">Folder Path:</label>
                 <input type="text" class="form-control" id="folderPath" name="folderPath">
@@ -36,8 +37,15 @@
             </div>
             <button type="submit" class="btn btn-primary">Save Config</button>
         </form>
-    </div>
 
+        <form action="/load_config" method="post">
+            <div class="form-group">
+                <label for="configPath">Config File Path:</label>
+                <input type="text" class="form-control" id="configPath" name="configPath" placeholder="C:\Users\fifth\PycharmProjects\tsvp\src\config.cfg">
+            </div>
+            <button type="submit" class="btn btn-info">Load Config</button>
+        </form>
+    </div>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>

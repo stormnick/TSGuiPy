@@ -5,20 +5,25 @@ from src import plot
 
 app = Flask(__name__)
 
+
 def local_run():
     print("local")
 
+
 def cluster_run():
     print("cluster")
+
 
 @app.route('/')
 def index():
     return render_template('home_page.html')
 
+
 @app.route('/run_python', methods=['GET', 'POST'])
 def run_python():
     # Your Python code here
     return "Python function executed!"
+
 
 @app.route('/run_python2', methods=['POST'])
 def run_python2():
@@ -32,10 +37,12 @@ def run_python2():
 
     return "Python script has been executed"
 
+
 @app.route('/get_plot')
 def get_plot():
     fig = plot.create_plot()
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
@@ -50,9 +57,10 @@ def config():
         save_config(config_data)
         # Redirect or show a success message
     else:
-        config_data = load_config()
-        # Render the form with config_data
+        config_data = load_config("config.cfg")
+    # Render the form with config_data
     return render_template('config.html', config=config_data)
+
 
 def save_config(config_data):
     config = configparser.ConfigParser()
@@ -60,10 +68,19 @@ def save_config(config_data):
     with open('config.cfg', 'w') as configfile:
         config.write(configfile)
 
-def load_config():
+
+@app.route('/load_config', methods=['POST'])
+def handle_load_config():
+    config_path = request.form.get('configPath', 'default_config.ini')
+    config_data = load_config(config_path)
+    # You might want to pass this config_data to render in the config form
+    return render_template('config.html', config=config_data)
+
+
+def load_config(config_path):
     config = configparser.ConfigParser()
-    config.read('config.cfg')
-    return config['DEFAULT']
+    config.read(config_path)
+    return config['DEFAULT']  # Assuming 'DEFAULT' section in config file
 
 
 if __name__ == '__main__':
