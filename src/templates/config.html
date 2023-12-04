@@ -21,10 +21,35 @@
     </div>
     {% endif %}
 
+        <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">TSGuiPy</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Config Creator <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/monitor">Job Monitor</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/results">Results Viewer</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="container mt-5">
-        <h2>Config File Creator</h2>
+        <h1>Config File Creator</h1>
         <a href="/" class="btn btn-secondary mt-3">Go Back to Home Page</a>
         <form action="/config" method="post">
+            <h3>Turbospectrum compiler</h3>
             <div class="form-group">
                 <label for="turbospectrum_compiler__compiler">Turbospectrum compiler:</label>
                 <select class="form-control" id="turbospectrum_compiler__compiler" name="turbospectrum_compiler__compiler"  value="{{ config.get('turbospectrum_compiler__compiler', '') }}">
@@ -32,22 +57,62 @@
                     <option>gnu</option>
                 </select>
             </div>
+            <h3>Main paths</h3>
             <div class="form-group">
-                <label for="folderPath">Folder Path:</label>
-                <input type="text" class="form-control" id="folderPath" name="folderPath"  value="{{ config.get('default__folderpath', '') }}">
+                <label for="MainPaths__turbospectrum_path">Turbospectrum path:</label>
+                <input type="text" class="form-control" id="MainPaths__turbospectrum_path" name="MainPaths__turbospectrum_path"  value="{{ config.get('MainPaths__turbospectrum_path', '') }}">
             </div>
             <div class="form-group">
-                <label for="filePath">File Path:</label>
-                <input type="text" class="form-control" id="filePath" name="filePath"  value="{{ config.get('default__filepath', '') }}">
+                <label for="MainPaths__interpolators_path">Interpolators path:</label>
+                <input type="text" class="form-control" id="MainPaths__interpolators_path" name="MainPaths__interpolators_path"  value="{{ config.get('MainPaths__interpolators_path', '') }}">
             </div>
             <div class="form-group">
-                <label for="optionSelect">Choose an Option:</label>
-                <select class="form-control" id="optionSelect" name="optionSelect"  value="{{ config.get('default__optionselect', '') }}">
-                    <option>Option 1</option>
-                    <option>Option 2</option>
-                    <option>Option 3</option>
-                </select>
+                <label for="MainPaths__line_list_path">Line list path:</label>
+                <input type="text" class="form-control" id="MainPaths__line_list_path" name="MainPaths__line_list_path"  value="{{ config.get('MainPaths__line_list_path', '') }}">
             </div>
+            <div class="form-group">
+                <label for="MainPaths__model_atmosphere_grid_path_1d">Model atmosphere grid path 1d:</label>
+                <input type="text" class="form-control" id="MainPaths__model_atmosphere_grid_path_1d" name="MainPaths__model_atmosphere_grid_path_1d"  value="{{ config.get('MainPaths__model_atmosphere_grid_path_1d', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__model_atmosphere_grid_path_3d">Model atmosphere grid path 3d:</label>
+                <input type="text" class="form-control" id="MainPaths__model_atmosphere_grid_path_3d" name="MainPaths__model_atmosphere_grid_path_3d"  value="{{ config.get('MainPaths__model_atmosphere_grid_path_3d', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__model_atoms_path">Model atoms path:</label>
+                <input type="text" class="form-control" id="MainPaths__model_atoms_path" name="MainPaths__model_atoms_path"  value="{{ config.get('MainPaths__model_atoms_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__departure_file_path">Departure file path:</label>
+                <input type="text" class="form-control" id="MainPaths__departure_file_path" name="MainPaths__departure_file_path"  value="{{ config.get('MainPaths__departure_file_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__departure_file_config_path">Departure file config path:</label>
+                <input type="text" class="form-control" id="MainPaths__departure_file_config_path" name="MainPaths__departure_file_config_path"  value="{{ config.get('MainPaths__departure_file_config_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__output_path">Output path:</label>
+                <input type="text" class="form-control" id="MainPaths__output_path" name="MainPaths__output_path"  value="{{ config.get('MainPaths__output_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__linemasks_path">Linemasks path:</label>
+                <input type="text" class="form-control" id="MainPaths__linemasks_path" name="MainPaths__linemasks_path"  value="{{ config.get('MainPaths__linemasks_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__spectra_input_path">Spectra input path:</label>
+                <input type="text" class="form-control" id="MainPaths__spectra_input_path" name="MainPaths__spectra_input_path"  value="{{ config.get('MainPaths__spectra_input_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__fitlist_input_path">Fitlist input path:</label>
+                <input type="text" class="form-control" id="MainPaths__fitlist_input_path" name="MainPaths__fitlist_input_path"  value="{{ config.get('MainPaths__fitlist_input_path', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="MainPaths__temporary_directory_path">Temporary directory path:</label>
+                <input type="text" class="form-control" id="MainPaths__temporary_directory_path" name="MainPaths__temporary_directory_path"  value="{{ config.get('MainPaths__temporary_directory_path', '') }}">
+            </div>
+
+
+
             <div class="form-group">
                 <label for="numberInput">Number Input:</label>
                 <input type="number" class="form-control" id="numberInput" name="numberInput"  value="{{ config.get('default__numberinput', '') }}">

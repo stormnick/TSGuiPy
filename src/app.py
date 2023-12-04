@@ -52,12 +52,35 @@ def config():
     if request.method == 'POST':
         config_data = {}
         config_data['turbospectrum_compiler'] = {'compiler': request.form['turbospectrum_compiler__compiler']}
-        config_data['default'] = {
-            'folderpath': request.form['folderPath'],
-            'filepath': request.form['filePath'],
-            'optionselect': request.form['optionSelect'],
-            'numberinput': request.form['numberInput'],
-            'textinput': request.form['textInput']
+        # here are the other sections
+        #"turbospectrum_path"] = self.old_turbospectrum_global_path
+        #"interpolators_path"] = self.interpolators_path
+        #"line_list_path"] = self.line_list_path
+        #"model_atmosphere_grid_path_1d"] = self.model_atmosphere_grid_path_1d
+        #"model_atmosphere_grid_path_3d"] = self.model_atmosphere_grid_path_3d
+        #"model_atoms_path"] = self.model_atoms_path
+        #"departure_file_path"] = self.departure_file_path
+        #"departure_file_config_path"] = self.departure_file_config_path
+        #"output_path"] = self.old_output_folder_path_global
+        #"linemasks_path"] = self.linemasks_path
+        #"spectra_input_path"] = self.spectra_input_path
+        #"fitlist_input_path"] = self.fitlist_input_path
+        #"temporary_directory_path"] = self.old_global_temporary_directory
+        config_data['MainPaths'] = {
+            'turbospectrum_path': request.form['MainPaths__turbospectrum_path'],
+            'interpolators_path': request.form['MainPaths__interpolators_path'],
+            'line_list_path': request.form['MainPaths__line_list_path'],
+            'model_atmosphere_grid_path_1d': request.form['MainPaths__model_atmosphere_grid_path_1d'],
+            'model_atmosphere_grid_path_3d': request.form['MainPaths__model_atmosphere_grid_path_3d'],
+            'model_atoms_path': request.form['MainPaths__model_atoms_path'],
+            'departure_file_path': request.form['MainPaths__departure_file_path'],
+            'departure_file_config_path': request.form['MainPaths__departure_file_config_path'],
+            'output_path': request.form['MainPaths__output_path'],
+            'linemasks_path': request.form['MainPaths__linemasks_path'],
+            'spectra_input_path': request.form['MainPaths__spectra_input_path'],
+            'fitlist_input_path': request.form['MainPaths__fitlist_input_path'],
+            'temporary_directory_path': request.form['MainPaths__temporary_directory_path']
+
         }
         save_config(config_data, config_path)
         config_data = load_config(config_path)
@@ -94,12 +117,10 @@ def load_config(config_path):
     config.read(config_path)
     # convert config to dict
     config_dict = {}
-    print(config.sections())
     for section in config.sections():
         for key in config[section]:
             new_key = f"{section}__{key}"
             config_dict[new_key] = config[section][key]
-    print(config_dict)
     return config_dict
 
 
