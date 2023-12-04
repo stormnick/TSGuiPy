@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Creator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Config File Creator</h2>
+        <form action="/save_config" method="post">
+            <div class="form-group">
+                <label for="folderPath">Folder Path:</label>
+                <input type="text" class="form-control" id="folderPath" name="folderPath">
+            </div>
+            <div class="form-group">
+                <label for="filePath">File Path:</label>
+                <input type="text" class="form-control" id="filePath" name="filePath">
+            </div>
+            <div class="form-group">
+                <label for="optionSelect">Choose an Option:</label>
+                <select class="form-control" id="optionSelect" name="optionSelect">
+                    <option>Option 1</option>
+                    <option>Option 2</option>
+                    <option>Option 3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="numberInput">Number Input:</label>
+                <input type="number" class="form-control" id="numberInput" name="numberInput">
+            </div>
+            <div class="form-group">
+                <label for="textInput">Text Input:</label>
+                <input type="text" class="form-control" id="textInput" name="textInput">
+            </div>
+            <button type="submit" class="btn btn-primary">Save Config</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
