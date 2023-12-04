@@ -26,16 +26,23 @@
         <a href="/" class="btn btn-secondary mt-3">Go Back to Home Page</a>
         <form action="/config" method="post">
             <div class="form-group">
+                <label for="turbospectrum_compiler__compiler">Turbospectrum compiler:</label>
+                <select class="form-control" id="turbospectrum_compiler__compiler" name="turbospectrum_compiler__compiler"  value="{{ config.get('turbospectrum_compiler__compiler', '') }}">
+                    <option>intel</option>
+                    <option>gnu</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label for="folderPath">Folder Path:</label>
-                <input type="text" class="form-control" id="folderPath" name="folderPath"  value="{{ config.get('folderpath', '') }}">
+                <input type="text" class="form-control" id="folderPath" name="folderPath"  value="{{ config.get('default__folderpath', '') }}">
             </div>
             <div class="form-group">
                 <label for="filePath">File Path:</label>
-                <input type="text" class="form-control" id="filePath" name="filePath"  value="{{ config.get('filepath', '') }}">
+                <input type="text" class="form-control" id="filePath" name="filePath"  value="{{ config.get('default__filepath', '') }}">
             </div>
             <div class="form-group">
                 <label for="optionSelect">Choose an Option:</label>
-                <select class="form-control" id="optionSelect" name="optionSelect"  value="{{ config.get('optionselect', '') }}">
+                <select class="form-control" id="optionSelect" name="optionSelect"  value="{{ config.get('default__optionselect', '') }}">
                     <option>Option 1</option>
                     <option>Option 2</option>
                     <option>Option 3</option>
@@ -43,11 +50,11 @@
             </div>
             <div class="form-group">
                 <label for="numberInput">Number Input:</label>
-                <input type="number" class="form-control" id="numberInput" name="numberInput"  value="{{ config.get('numberinput', '') }}">
+                <input type="number" class="form-control" id="numberInput" name="numberInput"  value="{{ config.get('default__numberinput', '') }}">
             </div>
             <div class="form-group">
                 <label for="textInput">Text Input:</label>
-                <input type="text" class="form-control" id="textInput" name="textInput"  value="{{ config.get('textinput', '') }}">
+                <input type="text" class="form-control" id="textInput" name="textInput"  value="{{ config.get('default__textinput', '') }}">
             </div>
             <div class="form-group">
                 <label for="configPath">Config File Path:</label>

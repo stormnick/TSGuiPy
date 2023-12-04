@@ -50,7 +50,9 @@ def get_plot():
 def config():
     config_path = request.form.get('configPath', DEFAULT_CONFIG_PATH)
     if request.method == 'POST':
-        config_data = {
+        config_data = {}
+        config_data['turbospectrum_compiler'] = {'compiler': request.form['turbospectrum_compiler__compiler']}
+        config_data['default'] = {
             'folderpath': request.form['folderPath'],
             'filepath': request.form['filePath'],
             'optionselect': request.form['optionSelect'],
@@ -58,6 +60,7 @@ def config():
             'textinput': request.form['textInput']
         }
         save_config(config_data, config_path)
+        config_data = load_config(config_path)
         # Redirect or show a success message
     else:
         config_data = load_config(DEFAULT_CONFIG_PATH)
@@ -70,7 +73,8 @@ def save_config(config_data, config_path):
         # throw warning
         return
     config = configparser.ConfigParser()
-    config['DEFAULT'] = config_data
+    for section in config_data:
+        config[section] = config_data[section]
     with open(config_path, 'w') as configfile:
         config.write(configfile)
 
@@ -88,7 +92,15 @@ def handle_load_config():
 def load_config(config_path):
     config = configparser.ConfigParser()
     config.read(config_path)
-    return dict(config['DEFAULT'])  # Assuming 'DEFAULT' section in config file
+    # convert config to dict
+    config_dict = {}
+    print(config.sections())
+    for section in config.sections():
+        for key in config[section]:
+            new_key = f"{section}__{key}"
+            config_dict[new_key] = config[section][key]
+    print(config_dict)
+    return config_dict
 
 
 if __name__ == '__main__':
