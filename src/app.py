@@ -87,8 +87,9 @@ def config():
         # Redirect or show a success message
     else:
         config_data = load_config(DEFAULT_CONFIG_PATH)
+        config_data2 = load_config(config_path)
     # Render the form with config_data
-    return render_template('config.html', config=config_data, default_config_path=config_path)
+    return render_template('config.html', config=config_data, default_config_path=config_path, config_data=config_data2)
 
 
 def save_config(config_data, config_path):

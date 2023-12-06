@@ -110,21 +110,14 @@
                 <label for="MainPaths__temporary_directory_path">Temporary directory path:</label>
                 <input type="text" class="form-control" id="MainPaths__temporary_directory_path" name="MainPaths__temporary_directory_path"  value="{{ config.get('MainPaths__temporary_directory_path', '') }}">
             </div>
+            {% for key, value in config_data.items() %}
+                    <div class="form-group">
+                        <label for="{{ key }}">{{ key }}</label>
+                        <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}">
+                    </div>
+            {% endfor %}
 
 
-
-            <div class="form-group">
-                <label for="numberInput">Number Input:</label>
-                <input type="number" class="form-control" id="numberInput" name="numberInput"  value="{{ config.get('default__numberinput', '') }}">
-            </div>
-            <div class="form-group">
-                <label for="textInput">Text Input:</label>
-                <input type="text" class="form-control" id="textInput" name="textInput"  value="{{ config.get('default__textinput', '') }}">
-            </div>
-            <div class="form-group">
-                <label for="configPath">Config File Path:</label>
-                <input type="text" class="form-control" id="configPath" name="configPath" value="{{ default_config_path }}">
-            </div>
             <button type="submit" class="btn btn-primary">Save Config</button>
         </form>
         <form action="/load_config" method="post">
