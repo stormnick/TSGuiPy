@@ -3,7 +3,8 @@ import importlib
 import sys
 
 from flask import Flask, render_template, request, jsonify
-from src import plot
+from TSGuiPy.src import plot
+from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis
 
 app = Flask(__name__)
 
@@ -145,12 +146,51 @@ def import_module_from_path(module_name, file_path):
     spec.loader.exec_module(module)
     return module
 
+@app.route('/results')
+def results():
+    return render_template('index.html')
 
+
+@app.route('/generate_synthetic_spectrum')
 def generate_synthetic_spectrum():
-    tsfitpy_module = import_module_from_path( "main", 'C:/Users/fifth/PycharmProjects/TSFitPy/')
-    print(tsfitpy_module.solar_abundances)
+    return render_template('generate_synthetic_spectrum.html')
 
+def call_m3d(teff, logg, feh, lmin, lmax):
+    m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
+                   "nlte_config_path": "../input_files/nlte_data/nlte_filenames.cfg",
+                   "model_atom_path": "../input_files/nlte_data/model_atoms/",
+                   "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/1D/",
+                   "line_list_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/",
+                   "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
+
+    atmosphere_type = "1D"  # "1D" or "3D"
+    hash_table_size = 100
+    n_nu = 1
+    mpi_cores = 1
+    # if 3D atmosphere is used, then the following is needed
+    dims = 23  # dimensions of the atmosphere
+    atmos_format = 'Multi'  # MUST, Stagger or Multi
+    nx = 10  # only if Stagger
+    ny = 10  # only if Stagger
+    nz = 230  # only if Stagger
+    snap = 1  # snapshot number, only if Stagger
+    # nlte settings
+    nlte_flag = False
+    # nlte settings, if nlte_flag = False, these are not used
+    nlte_iterations_max = 10
+    nlte_convergence_limit = 0.001
+    element_in_nlte = "Fe"  # can choose only one element
+    element_abundances = {}
+    wavelength, norm_flux, _ = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit)
+    return wavelength, norm_flux
+
+
+@app.route('/get_m3d_plot')
+def get_plot_m3d():
+    print("get_plot_m3d")
+    fig = plot.create_plot()
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 if __name__ == '__main__':
-    #app.run(debug=True)
-    generate_synthetic_spectrum()
+    app.run(debug=True)
+    #generate_synthetic_spectrum()

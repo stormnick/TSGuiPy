@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run Python</title>
-     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Spectra Fitting Application</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <style>
         .jumbotron {
             background-color: #f2f2f2;
@@ -28,6 +29,10 @@
             padding-top: 2rem;
         }
     </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
         function runPython() {
             const runLocation = document.getElementById("run-location").value;
@@ -42,11 +47,10 @@
               .catch(error => console.log('Error:', error));
         }
     </script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-    function loadPlot() {
-    $.getJSON('/get_plot', function(data) {
+    function loadPlot2() {
+        console.log("loadPlot() called");
+    $.getJSON('/get_m3d_plot', function(data) {
         console.log(data); // Log the received data to the console
 
         // Clear the plot-container
@@ -63,7 +67,7 @@
     </script>
 </head>
 <body>
-<!-- Navigation Bar -->
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" href="#">TSGuiPy</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,25 +84,49 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="/#">Results Viewer</a>
-                </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
+                    <a class="nav-link" href="/results">Results Viewer</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Generate synthetic spectrum</a>
                 </li>
             </ul>
         </div>
     </nav>
-    <button onclick="runPython()">Run Python</button>
-    <select id="run-location">
-        <option value="local">Local</option>
-        <option value="cluster">Cluster</option>
-    </select>
-    <div id="plot-container"></div>
 
-    <button onclick="loadPlot()">Load Plot</button>
+    <!-- Jumbotron -->
+    <div class="container">
+        <div class="jumbotron">
+            <h1 class="display-4">Make your choice!</h1>
+            <p class="lead">:D.</p>
+            <hr class="my-4">
+            <p>Change.</p>
+            <div class="form-group">
+                <label for="m3d_teff">teff:</label>
+                <input type="number" class="form-control" id="m3d_teff" name="m3d_teff" value="5777">
+            </div>
+            <div class="form-group">
+                <label for="m3d_logg">logg:</label>
+                <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
+            </div>
+            <div class="form-group">
+                <label for="m3d_feh">logg:</label>
+                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0">
+            </div>
+            <div class="form-group">
+                <label for="m3d_lmin">minimum wavelength:</label>
+                <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
+            </div>
+            <div class="form-group">
+                <label for="m3d_lmax">maximum wavelength:</label>
+                <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
+            </div>
 
+            <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
+            <div id="plot-container"></div>
+        </div>
 
+    </div>
 
 </body>
 </html>
