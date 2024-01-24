@@ -157,9 +157,9 @@ def generate_synthetic_spectrum():
 
 def call_m3d(teff, logg, feh, lmin, lmax):
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
-                   "nlte_config_path": "../input_files/nlte_data/nlte_filenames.cfg",
-                   "model_atom_path": "../input_files/nlte_data/model_atoms/",
-                   "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/1D/",
+                   "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
+                   "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
+                   "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/",
                    "line_list_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/",
                    "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
 
@@ -181,14 +181,20 @@ def call_m3d(teff, logg, feh, lmin, lmax):
     nlte_convergence_limit = 0.001
     element_in_nlte = "Fe"  # can choose only one element
     element_abundances = {}
-    wavelength, norm_flux, _ = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit)
-    return wavelength, norm_flux
+    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit)
+    return list(wavelength), list(norm_flux)
 
 
 @app.route('/get_m3d_plot')
 def get_plot_m3d():
+    teff = request.args.get('teff', type=float)
+    logg = request.args.get('logg', type=float)
+    feh = request.args.get('feh', type=float)
+    lmin = request.args.get('lmin', type=float)
+    lmax = request.args.get('lmax', type=float)
     print("get_plot_m3d")
-    fig = plot.create_plot()
+    wavelength, flux = call_m3d(teff, logg, feh, lmin, lmax)
+    fig = plot.create_plot_data(wavelength, flux)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 if __name__ == '__main__':

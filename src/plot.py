@@ -5,3 +5,9 @@ def create_plot():
     layout = go.Layout(title='Sample Plot')
     fig = go.Figure(data=[trace], layout=layout)
     return fig
+
+def create_plot_data(x, y):
+    trace = go.Scatter(x=x, y=y, mode='markers')
+    layout = go.Layout(title='Sample Plot')
+    fig = go.Figure(data=[trace], layout=layout)
+    return fig

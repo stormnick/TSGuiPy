@@ -49,8 +49,14 @@
     </script>
     <script>
     function loadPlot2() {
-        console.log("loadPlot() called");
-    $.getJSON('/get_m3d_plot', function(data) {
+    const m3d_teff_value = document.getElementById("m3d_teff").value;
+    const m3d_logg_value = document.getElementById("m3d_logg").value;
+    const m3d_feh_value = document.getElementById("m3d_feh").value;
+    const m3d_lmin_value = document.getElementById("m3d_lmin").value;
+    const m3d_lmax_value = document.getElementById("m3d_lmax").value;
+    const url = `/get_m3d_plot?teff=${encodeURIComponent(m3d_teff_value)}&logg=${encodeURIComponent(m3d_logg_value)}&feh=${encodeURIComponent(m3d_feh_value)}&lmin=${encodeURIComponent(m3d_lmin_value)}&lmax=${encodeURIComponent(m3d_lmax_value)}`;
+
+    $.getJSON(url, function(data) {
         console.log(data); // Log the received data to the console
 
         // Clear the plot-container
@@ -110,7 +116,7 @@
                 <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
             </div>
             <div class="form-group">
-                <label for="m3d_feh">logg:</label>
+                <label for="m3d_feh">feh:</label>
                 <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0">
             </div>
             <div class="form-group">
