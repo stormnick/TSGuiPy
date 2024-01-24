@@ -181,7 +181,7 @@ def call_m3d(teff, logg, feh, lmin, lmax):
     nlte_convergence_limit = 0.001
     element_in_nlte = "Fe"  # can choose only one element
     element_abundances = {}
-    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit)
+    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis_mine")
     return list(wavelength), list(norm_flux)
 
 
