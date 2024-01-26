@@ -3,15 +3,17 @@ import importlib
 import os
 import sys
 import tempfile
+import zipfile
 
 import numpy as np
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
 from scripts.loading_configs import TSFitPyConfig
 from scripts.auxiliary_functions import apply_doppler_correction
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
 data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": []}
@@ -204,6 +206,42 @@ def get_plot_m3d():
     fig = plot.create_plot_data(wavelength, flux)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
+@app.route('/upload_zip', methods=['POST'])
+def upload_zipped_file():
+    if 'file' not in request.files:
+        return redirect(url_for('analyse_results'))
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(url_for('analyse_results'))
+    if file and file.filename.endswith('.zip'):
+        filename = 'temp_uploaded_file.zip'
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, filename)
+            file.save(file_path)
+            extract_and_process_zip(file_path)
+        return redirect(url_for('analyse_results'))
+    else:
+        return redirect(url_for('analyse_results'))
+
+def extract_and_process_zip(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with tempfile.TemporaryDirectory() as temp_dir_unzipped:
+            zip_ref.extractall(temp_dir_unzipped)
+            # Process files here
+            data_results_storage['fitted_spectra'] = {}
+            #for file_name in zip_ref.namelist():
+            #    filepath = os.path.join(temp_dir_unzipped, file_name.filename.split("/")[1])
+            #    file_name.save(filepath)
+            # print all directories in temp_dir_unzipped
+            dir_unzipped = os.path.join(temp_dir_unzipped, os.listdir(temp_dir_unzipped)[0])
+            parsed_config_dict = load_output_data(dir_unzipped)
+            data_results_storage["parsed_config_dict"] = parsed_config_dict
+            process_file(dir_unzipped, data_results_storage["parsed_config_dict"])
+            data_results_storage["options"] = data_results_storage["parsed_config_dict"]["specname_fitlist"]
+                # now route to analyse_results
+
+    os.remove(zip_path)
+
 @app.route('/upload', methods=['POST'])
 def upload_folder():
     files = request.files.getlist('folder')
@@ -345,5 +383,6 @@ def analyse_results():
     return render_template('analyse_results.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
 
 if __name__ == '__main__':
+
     app.run(debug=True)
     #generate_synthetic_spectrum()
