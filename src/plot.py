@@ -7,7 +7,7 @@ def create_plot():
     fig = go.Figure(data=[trace], layout=layout)
     return fig
 
-def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line):
+def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title):
     # plot fitted as line
     trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
     # plot observed data as a scatter plot
@@ -23,6 +23,6 @@ def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, ce
     # find y_fitted that is within xlimit
     y_fitted2 = y_fitted[(x_fitted >= xlimit[0]) & (x_fitted <= xlimit[1])]
     ylimit = min(y_fitted2) - 0.03, max(y_fitted2) + 0.03
-    layout = go.Layout(title='Plot')
+    layout = go.Layout(title=title)
     fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout, layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
     return fig

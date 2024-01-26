@@ -246,6 +246,25 @@ def process_file(folder_path, processed_dict):
     data_results_storage["linemask_left_wavelengths"] = linemask_left_wavelengths
     data_results_storage["linemask_right_wavelengths"] = linemask_right_wavelengths
 
+    output_file_df = processed_dict["output_file_df"]
+    fitted_element = processed_dict['fitted_element']
+    if processed_dict["fitting_method"] == "lbl" or processed_dict["fitting_method"] == "vmic":
+        if fitted_element != "Fe":
+            column_name = f"{fitted_element}_Fe"
+            fitted_value_label = f"[{fitted_element}/Fe]"
+        else:
+            column_name = "Fe_H"
+            fitted_value_label = "[Fe/H]"
+        fitted_value = column_name
+    elif processed_dict["fitting_method"] == "teff":
+        fitted_value = "Teff"
+        fitted_value_label = "Teff"
+    elif processed_dict["fitting_method"] == "logg":
+        fitted_value = "logg"
+        fitted_value_label = "logg"
+
+    data_results_storage["fitted_value_label"] = fitted_value_label
+
     # load spectra
     for (filename, spectra_rv) in zip(data_results_storage["parsed_config_dict"]["specname_fitlist"], data_results_storage["parsed_config_dict"]["rv_fitlist"]):
         data_results_storage['fitted_spectra'][filename] = {}
@@ -259,6 +278,27 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename]["flux_observed"] = flux_observed
         # rv correction
         data_results_storage['fitted_spectra'][filename]['spectra_rv'] = spectra_rv
+        # load all fitted values for each linemask
+        data_results_storage['fitted_spectra'][filename]['fitted_rv'] = {}
+        data_results_storage['fitted_spectra'][filename]['flag_error'] = {}
+        data_results_storage['fitted_spectra'][filename]['flag_warning'] = {}
+        data_results_storage['fitted_spectra'][filename]['chi_squared'] = {}
+        data_results_storage['fitted_spectra'][filename]['fitted_value'] = {}
+        data_results_storage['fitted_spectra'][filename]['ew'] = {}
+
+        df_correct_specname_indices = output_file_df["specname"] == filename
+        output_file_df_specname = output_file_df[df_correct_specname_indices]
+        for linemask_idx, linemask_center_wavelength in enumerate(linemask_center_wavelengths):
+            #output_file_df_index = output_file_df_specname[output_file_df_specname["wave_center"] == linemask_center_wavelength]
+            output_file_df_index = (np.abs(output_file_df_specname[df_correct_specname_indices]["wave_center"] - linemask_center_wavelength)).argmin()
+            # load fitted values
+            data_results_storage['fitted_spectra'][filename]['fitted_rv'][linemask_idx] = output_file_df_specname["Doppler_Shift_add_to_RV"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['flag_error'][linemask_idx] = output_file_df_specname["flag_error"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['flag_warning'][linemask_idx] = output_file_df_specname["flag_warning"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['chi_squared'][linemask_idx] = output_file_df_specname["chi_squared"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['fitted_value'][linemask_idx] = output_file_df_specname[fitted_value].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['ew'][linemask_idx] = output_file_df_specname["ew"].values[output_file_df_index]
+
 
 
     #print(filepath)
@@ -276,20 +316,27 @@ def plot_fitted_result():
     specname = data['specname']
     linemask_to_plot = float(data['linemask'])
     if specname in data_results_storage['fitted_spectra']:
+        # find linemask_index by finding which linemask_center_wavelengths is closest to the linemask_to_plot
+        linemask_index = np.argmin(np.abs(data_results_storage["linemask_center_wavelengths"] - linemask_to_plot))
+        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_index]
+        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_index]
+        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_index]
+        # load spectra
         wavelength_fitted = (data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
         flux_fitted = (data_results_storage['fitted_spectra'][specname]["flux_fitted"])
         wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
         flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
         rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
         # apply rv correction
-        wavelength_observed = (apply_doppler_correction(wavelength_observed, rv_correction))
-        # find linemask_index by finding which linemask_center_wavelengths is closest to the linemask_to_plot
-        linemask_index = np.argmin(np.abs(data_results_storage["linemask_center_wavelengths"] - linemask_to_plot))
-        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_index]
-        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_index]
-        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_index]
-        fig = plot.create_plot_data(wavelength_fitted, flux_fitted, wavelength_observed, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths)
+        rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_index]
+        wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
+
+        title = f"{data_results_storage['fitted_value_label']} = {data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_index]:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_index]:.2f}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_index]:.6f}, flag error = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_index]}, flag warning = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_index]}"
+
+        fig = plot.create_plot_data(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title)
         return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+    else:
+        print(specname, data_results_storage['fitted_spectra'])
     return None
 
 
