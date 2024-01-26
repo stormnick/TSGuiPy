@@ -132,6 +132,8 @@
             </form>
                 <div id="plotsGrid"></div>
                 <div id="meanValue">Mean Value: </div>
+                <div id="standardError">Standard error: </div>
+                <div id="countValue">Lines: </div>
 
             <div id="plot-container"></div>
         </div>
@@ -179,16 +181,30 @@
     function updateMeanValue(figures) {
         let sum = 0;
         let count = 0;
+        let values = [];
         figures.forEach((_, index) => {
             const checkbox = document.getElementById('checkbox' + index);
             if (checkbox.checked) {
-                sum += parseFloat(checkbox.getAttribute('data-value')); // Get the value from the checkbox
+                const value = parseFloat(checkbox.getAttribute('data-value'));
+                values.push(value);
+                sum += value;
                 count++;
             }
         });
+
         const meanValue = count > 0 ? sum / count : 0;
-        document.getElementById('meanValue').textContent = 'Mean Value: ' + meanValue.toFixed(2);
+        let sumOfSquares = 0;
+        values.forEach(value => {
+            sumOfSquares += Math.pow(value - meanValue, 2);
+        });
+        const stdDeviation = count > 1 ? Math.sqrt(sumOfSquares / (count - 1)) : 0;
+        const standardError = count > 0 ? stdDeviation / Math.sqrt(count) : 0;
+
+        document.getElementById('meanValue').textContent = 'Mean Value: ' + meanValue.toFixed(3);
+        document.getElementById('standardError').textContent = 'Standard error: ' + standardError.toFixed(3);
+        document.getElementById('countValue').textContent = 'Count: ' + count;
     }
+
     </script>
 
 </body>

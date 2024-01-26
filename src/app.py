@@ -410,7 +410,7 @@ def plot_fitted_result_one_star():
         wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
 
         fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
-        title = f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}, flag error = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, flag warning = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}"
+        title = f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}, ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}"
         fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
