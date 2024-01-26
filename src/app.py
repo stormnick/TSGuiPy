@@ -221,7 +221,6 @@ def upload_folder():
             file.save(filepath)
         parsed_config_dict = load_output_data(temp_dir)
         data_results_storage["parsed_config_dict"] = parsed_config_dict
-        print(data_results_storage["parsed_config_dict"]["filenames_output_folder"])
         # save all files
         for file in files:
             filepath = os.path.join(temp_dir, file.filename.split("/")[1])
@@ -237,16 +236,17 @@ def upload_folder():
 
 def process_file(filepath, processed_dict):
     # Your code to process each file
-    if filepath in data_results_storage["parsed_config_dict"]["filenames_output_folder"]:
-        data_results_storage['fitted_spectra'][filepath.split("/")[-1]] = {}
-        wavelength, flux = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
-        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["wavelength_fitted"] = wavelength
-        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["flux_fitted"] = flux
-        filename_observed_spectra = filepath.replace("result_spectrum_", "").replace("_convolved.spec", "")
-        wavelength_observed, flux_observed = np.loadtxt(filename_observed_spectra, unpack=True, usecols=(0,1), dtype=float)
-        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["wavelength_observed"] = wavelength_observed
-        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["flux_observed"] = flux_observed
-    if filepath == processed_dict["linemask_location"]:
+    filename = os.path.basename(filepath)
+    folder_path = os.path.dirname(filepath)
+    if filename in data_results_storage["parsed_config_dict"]["specname_fitlist"]:
+        data_results_storage['fitted_spectra'][filename] = {}
+        wavelength, flux = np.loadtxt(os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec"), unpack=True, usecols=(0,1), dtype=float)
+        data_results_storage['fitted_spectra'][filename]["wavelength_fitted"] = wavelength
+        data_results_storage['fitted_spectra'][filename]["flux_fitted"] = flux
+        wavelength_observed, flux_observed = np.loadtxt(os.path.join(folder_path, filename), unpack=True, usecols=(0,1), dtype=float)
+        data_results_storage['fitted_spectra'][filename]["wavelength_observed"] = wavelength_observed
+        data_results_storage['fitted_spectra'][filename]["flux_observed"] = flux_observed
+    elif filepath == processed_dict["linemask_location"]:
         linemask_center_wavelengths, linemask_left_wavelengths, linemask_right_wavelengths = np.loadtxt(filepath, dtype=float, comments=";", usecols=(0, 1, 2), unpack=True)
 
         # sorts linemask, just like in TSFitPy
@@ -263,7 +263,7 @@ def process_file(filepath, processed_dict):
         data_results_storage["linemask_left_wavelengths"] = linemask_left_wavelengths
         data_results_storage["linemask_right_wavelengths"] = linemask_right_wavelengths
 
-    print(filepath)
+    #print(filepath)
 
 # Optional: Function to clean up temporary files
 def clean_up(directory):
