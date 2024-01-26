@@ -1,6 +1,8 @@
 import configparser
 import importlib
+import os
 import sys
+import tempfile
 
 from flask import Flask, render_template, request, jsonify
 from TSGuiPy.src import plot
@@ -196,6 +198,49 @@ def get_plot_m3d():
     wavelength, flux = call_m3d(teff, logg, feh, lmin, lmax)
     fig = plot.create_plot_data(wavelength, flux)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+
+@app.route('/upload', methods=['POST'])
+def upload_folder():
+    files = request.files.getlist('folder')
+    if not files:
+        return 'No files uploaded'
+
+    # Temporary directory to save uploaded files
+    # create temp dir
+    with tempfile.TemporaryDirectory() as temp_dir:
+        #os.mkdir(temp_dir)
+        # Save files and process them
+        for file in files:
+            filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+            file.save(filepath)
+            # Process each file as needed
+            process_file(filepath)
+
+    # Optionally, clean up by deleting the temporary files
+    #clean_up(temp_dir)
+
+    return render_template('analyse_results.html')
+
+def process_file(filepath):
+    # Your code to process each file
+    if filepath.endswith(".cfg"):
+        config_parser = configparser.ConfigParser()
+        config_parser.read(filepath)
+        print(config_parser.sections())
+        print(".cfg", filepath)
+    else:
+        print(filepath)
+
+# Optional: Function to clean up temporary files
+def clean_up(directory):
+    for file in os.listdir(directory):
+        os.remove(os.path.join(directory, file))
+    os.rmdir(directory)
+
+
+@app.route('/analyse_results')
+def analyse_results():
+    return render_template('analyse_results.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
