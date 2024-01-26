@@ -1,3 +1,4 @@
+import numpy as np
 import plotly.graph_objs as go
 
 def create_plot():
@@ -8,9 +9,9 @@ def create_plot():
 
 def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line):
     # plot fitted as line
-    trace = go.Scatter(x=x_fitted, y=y_fitted, mode='lines', line=dict(color='red'), name='fitted')
+    trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
     # plot observed data as a scatter plot
-    trace_obs = go.Scatter(x=x_obs, y=y_obs, mode='markers', marker=dict(color='black'), name='observed')
+    trace_obs = go.Scatter(x=list(x_obs), y=list(y_obs), mode='markers', marker=dict(color='black'), name='observed')
     # plot the left line as a vertical line in green, no label
     trace_left_line = go.Scatter(x=[left_line, left_line], y=[0, 2], mode='lines', line=dict(color='green'), showlegend=False)
     # plot the right line as a vertical line in green
@@ -19,7 +20,9 @@ def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, ce
     trace_centre_line = go.Scatter(x=[centre_line, centre_line], y=[0, 2], mode='lines', line=dict(color='blue'), showlegend=False)
     # xlimit is the range of x values to plot
     xlimit = [left_line - 0.1, right_line + 0.1]
-    ylimit = min(y_fitted) - 0.03, max(y_fitted) + 0.03
+    # find y_fitted that is within xlimit
+    y_fitted2 = y_fitted[(x_fitted >= xlimit[0]) & (x_fitted <= xlimit[1])]
+    ylimit = min(y_fitted2) - 0.03, max(y_fitted2) + 0.03
     layout = go.Layout(title='Plot')
     fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout, layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
     return fig

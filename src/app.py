@@ -5,7 +5,7 @@ import sys
 import tempfile
 
 import numpy as np
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
 from scripts.loading_configs import TSFitPyConfig
@@ -225,9 +225,27 @@ def upload_folder():
         data_results_storage["options"] = data_results_storage["parsed_config_dict"]["specname_fitlist"]
     #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
-    return analyse_results()
+    # now route to analyse_results
+    return redirect(url_for('analyse_results'))
 
 def process_file(folder_path, processed_dict):
+    # linemask loading
+    linemask_center_wavelengths, linemask_left_wavelengths, linemask_right_wavelengths = np.loadtxt(processed_dict["linemask_location"], dtype=float, comments=";", usecols=(0, 1, 2), unpack=True)
+
+    # sorts linemask, just like in TSFitPy
+    if linemask_center_wavelengths.size > 1:
+        linemask_center_wavelengths = np.asarray(sorted(linemask_center_wavelengths))
+        linemask_left_wavelengths = np.asarray(sorted(linemask_left_wavelengths))
+        linemask_right_wavelengths = np.asarray(sorted(linemask_right_wavelengths))
+    elif linemask_center_wavelengths.size == 1:
+        linemask_center_wavelengths = np.asarray([linemask_center_wavelengths])
+        linemask_left_wavelengths = np.asarray([linemask_left_wavelengths])
+        linemask_right_wavelengths = np.asarray([linemask_right_wavelengths])
+
+    data_results_storage["linemask_center_wavelengths"] = linemask_center_wavelengths
+    data_results_storage["linemask_left_wavelengths"] = linemask_left_wavelengths
+    data_results_storage["linemask_right_wavelengths"] = linemask_right_wavelengths
+
     # load spectra
     for (filename, spectra_rv) in zip(data_results_storage["parsed_config_dict"]["specname_fitlist"], data_results_storage["parsed_config_dict"]["rv_fitlist"]):
         data_results_storage['fitted_spectra'][filename] = {}
@@ -242,22 +260,6 @@ def process_file(folder_path, processed_dict):
         # rv correction
         data_results_storage['fitted_spectra'][filename]['spectra_rv'] = spectra_rv
 
-    # linemask loading
-    linemask_center_wavelengths, linemask_left_wavelengths, linemask_right_wavelengths = np.loadtxt(processed_dict["linemask_location"], dtype=float, comments=";", usecols=(0, 1, 2), unpack=True)
-
-    # sorts linemask, just like in TSFitPy
-    if linemask_center_wavelengths.size > 1:
-        linemask_center_wavelengths = list(sorted(linemask_center_wavelengths))
-        linemask_left_wavelengths = list(sorted(linemask_left_wavelengths))
-        linemask_right_wavelengths = list(sorted(linemask_right_wavelengths))
-    elif linemask_center_wavelengths.size == 1:
-        linemask_center_wavelengths = list([linemask_center_wavelengths])
-        linemask_left_wavelengths = list([linemask_left_wavelengths])
-        linemask_right_wavelengths = list([linemask_right_wavelengths])
-
-    data_results_storage["linemask_center_wavelengths"] = linemask_center_wavelengths
-    data_results_storage["linemask_left_wavelengths"] = linemask_left_wavelengths
-    data_results_storage["linemask_right_wavelengths"] = linemask_right_wavelengths
 
     #print(filepath)
 
@@ -274,15 +276,15 @@ def plot_fitted_result():
     specname = data['specname']
     linemask_to_plot = float(data['linemask'])
     if specname in data_results_storage['fitted_spectra']:
-        wavelength_fitted = list(data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
-        flux_fitted = list(data_results_storage['fitted_spectra'][specname]["flux_fitted"])
+        wavelength_fitted = (data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
+        flux_fitted = (data_results_storage['fitted_spectra'][specname]["flux_fitted"])
         wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
-        flux_observed = list(data_results_storage['fitted_spectra'][specname]["flux_observed"])
+        flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
         rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
         # apply rv correction
-        wavelength_observed = list(apply_doppler_correction(wavelength_observed, rv_correction))
+        wavelength_observed = (apply_doppler_correction(wavelength_observed, rv_correction))
         # find linemask_index by finding which linemask_center_wavelengths is closest to the linemask_to_plot
-        linemask_index = np.argmin(np.abs(np.asarray(data_results_storage["linemask_center_wavelengths"]) - linemask_to_plot))
+        linemask_index = np.argmin(np.abs(data_results_storage["linemask_center_wavelengths"] - linemask_to_plot))
         center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_index]
         left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_index]
         right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_index]
