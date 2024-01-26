@@ -34,6 +34,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("myForm").addEventListener("submit", function(event) {
+                event.preventDefault(); // Prevents the default form submission action
+                plot_fitted_result();
+            });
+        });
+
         function runPython() {
             const runLocation = document.getElementById("run-location").value;
             fetch('/run_python2', {
@@ -118,10 +125,14 @@
                 <input type="file" name="folder" webkitdirectory directory multiple>
                 <input type="submit" value="Upload">
             </form>
-            <div class="form-group">
-                <label for="specname">specname:</label>
-                <input type="text" class="form-control" id="specname" name="specname"  value="422.spec">
-            </div>
+            <form id="myForm" method="post">
+                <select name="my_select">
+                    {% for option in options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Plot results">
+            </form>
 
             <div id="plot-container"></div>
             <button class="btn btn-info" onclick="plot_fitted_result()">Plot result</button>

@@ -208,7 +208,7 @@ def upload_folder():
     files = request.files.getlist('folder')
     if not files:
         return 'No files uploaded'
-
+    options = []
     # Temporary directory to save uploaded files
     # create temp dir
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -225,14 +225,14 @@ def upload_folder():
         for file in files:
             filepath = os.path.join(temp_dir, file.filename.split("/")[1])
             if not filepath.endswith(".cfg"):
-                #file.save(filepath)
                 # Process each file as needed
                 process_file(filepath, data_results_storage["parsed_config_dict"])
+        options = data_results_storage["parsed_config_dict"]["specname_fitlist"]
 
     # Optionally, clean up by deleting the temporary files
     #clean_up(temp_dir)
 
-    return render_template('analyse_results.html')
+    return render_template('analyse_results.html', options=options)
 
 def process_file(filepath, processed_dict):
     # Your code to process each file
@@ -292,7 +292,7 @@ def plot_fitted_result():
 
 @app.route('/analyse_results')
 def analyse_results():
-    return render_template('analyse_results.html')
+    return render_template('analyse_results.html', options=[])
 
 if __name__ == '__main__':
     app.run(debug=True)
