@@ -121,21 +121,20 @@
             <p class="lead">:D.</p>
             <hr class="my-4">
             <p>Change.</p>
-            <form action="/upload" method="post" enctype="multipart/form-data">
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
                 <input type="file" name="folder" webkitdirectory directory multiple>
                 <input type="submit" value="Upload">
             </form>
             <form id="myForm" method="post">
-                <select name="my_select">
+                <select id="specname">
                     {% for option in options %}
                     <option value="{{ option }}">{{ option }}</option>
                     {% endfor %}
                 </select>
-                <input type="submit" value="Plot results">
+                <input class="btn btn-info" type="submit" value="Plot results">
             </form>
 
             <div id="plot-container"></div>
-            <button class="btn btn-info" onclick="plot_fitted_result()">Plot result</button>
         </div>
 
     </div>

@@ -13,7 +13,7 @@ from scripts.loading_configs import TSFitPyConfig
 app = Flask(__name__)
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
-data_results_storage = {'fitted_spectra': []}
+data_results_storage = {'fitted_spectra': [], "options": []}
 
 
 def local_run():
@@ -208,7 +208,6 @@ def upload_folder():
     files = request.files.getlist('folder')
     if not files:
         return 'No files uploaded'
-    options = []
     # Temporary directory to save uploaded files
     # create temp dir
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -227,12 +226,10 @@ def upload_folder():
             if not filepath.endswith(".cfg"):
                 # Process each file as needed
                 process_file(filepath, data_results_storage["parsed_config_dict"])
-        options = data_results_storage["parsed_config_dict"]["specname_fitlist"]
-
+        data_results_storage["options"] = data_results_storage["parsed_config_dict"]["specname_fitlist"]
+    #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
-    #clean_up(temp_dir)
-
-    return render_template('analyse_results.html', options=options)
+    return render_template('analyse_results.html', options=data_results_storage["options"])
 
 def process_file(filepath, processed_dict):
     # Your code to process each file
@@ -292,7 +289,7 @@ def plot_fitted_result():
 
 @app.route('/analyse_results')
 def analyse_results():
-    return render_template('analyse_results.html', options=[])
+    return render_template('analyse_results.html', options=data_results_storage["options"])
 
 if __name__ == '__main__':
     app.run(debug=True)
