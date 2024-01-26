@@ -22,7 +22,8 @@ def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, ce
     xlimit = [left_line - 0.1, right_line + 0.1]
     # find y_fitted that is within xlimit
     y_fitted2 = y_fitted[(x_fitted >= xlimit[0]) & (x_fitted <= xlimit[1])]
-    ylimit = min(y_fitted2) - 0.03, max(y_fitted2) + 0.03
+    max_y = max(max(y_fitted2) + 0.03, 1.03)
+    ylimit = min(y_fitted2) - 0.03, max_y
     layout = go.Layout(title=title)
     fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout, layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
     return fig

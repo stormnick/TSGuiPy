@@ -118,17 +118,17 @@
     <!-- Jumbotron -->
     <div class="container">
         <div class="jumbotron">
-            <h1 class="display-4">Make your choice!</h1>
-            <p class="lead">:D.</p>
+            <h1 class="display-4">Plot your stars!</h1>
+            <p class="lead">Choose folder with the results. If too many files (>1000?) please zip the results folder and upload it instead</p>
             <hr class="my-4">
             <p>Change.</p>
             <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
                 <input type="file" name="folder" webkitdirectory directory multiple>
-                <input type="submit" value="Upload">
+                <input type="submit" value="Upload results folder">
             </form>
             <form id="uploadForm_zip" action="/upload_zip" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".zip">
-                <input type="submit" value="Upload">
+                <input type="submit" value="Upload .zip file with the results">
             </form>
 
             <form id="specnameChoiceForm" method="post">
