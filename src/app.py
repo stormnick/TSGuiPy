@@ -4,9 +4,11 @@ import os
 import sys
 import tempfile
 
+import numpy as np
 from flask import Flask, render_template, request, jsonify
 from TSGuiPy.src import plot
-from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis
+from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
+from scripts.loading_configs import TSFitPyConfig
 
 app = Flask(__name__)
 
@@ -212,33 +214,54 @@ def upload_folder():
     with tempfile.TemporaryDirectory() as temp_dir:
         #os.mkdir(temp_dir)
         # Save files and process them
+        # find a file that ends with .cfg
+        data_results_storage['fitted_spectra'] = {}
         for file in files:
             filepath = os.path.join(temp_dir, file.filename.split("/")[1])
             file.save(filepath)
-            # Process each file as needed
-            process_file(filepath)
+        parsed_config_dict = load_output_data(temp_dir)
+        data_results_storage["parsed_config_dict"] = parsed_config_dict
+        print(data_results_storage["parsed_config_dict"]["filenames_output_folder"])
+        # save all files
+        for file in files:
+            filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+            if not filepath.endswith(".cfg"):
+                #file.save(filepath)
+                # Process each file as needed
+                process_file(filepath, data_results_storage["parsed_config_dict"])
 
     # Optionally, clean up by deleting the temporary files
     #clean_up(temp_dir)
 
     return render_template('analyse_results.html')
 
-def process_file(filepath):
+def process_file(filepath, processed_dict):
     # Your code to process each file
-    if filepath.endswith(".cfg"):
-        config_parser = configparser.ConfigParser()
-        config_parser.read(filepath)
-        print(config_parser.sections())
-        data_results_storage["parsed_config"] = config_parser
-        print(".cfg", filepath)
-    else:
-        print(filepath)
+    if filepath in data_results_storage["parsed_config_dict"]["filenames_output_folder"]:
+        data_results_storage['fitted_spectra'][filepath.split("/")[-1]] = {}
+        wavelength, flux = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
+        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["wavelength"] = wavelength
+        data_results_storage['fitted_spectra'][filepath.split("/")[-1]]["flux"] = flux
+    print(filepath)
 
 # Optional: Function to clean up temporary files
 def clean_up(directory):
     for file in os.listdir(directory):
         os.remove(os.path.join(directory, file))
     os.rmdir(directory)
+
+@app.route('/plot_fitted_result', methods=['POST'])
+def plot_fitted_result():
+    print("plot_fitted_result")
+    data = request.json
+    specname = data['specname']
+    print("specname")
+    if specname in data_results_storage['fitted_spectra']:
+        fig = plot.create_plot_data(list(data_results_storage['fitted_spectra'][specname]["wavelength"]), list(data_results_storage['fitted_spectra'][specname]["flux"]))
+        return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+    wavelength, flux = [], []
+    fig = plot.create_plot_data(wavelength, flux)
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
 @app.route('/analyse_results')

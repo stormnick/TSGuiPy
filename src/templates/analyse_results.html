@@ -47,17 +47,13 @@
               .catch(error => console.log('Error:', error));
         }
 
-    function loadPlot3() {
+    function plot_fitted_result() {
     const requestData = {
-        teff: document.getElementById("m3d_teff").value,
-        logg: document.getElementById("m3d_logg").value,
-        feh: document.getElementById("m3d_feh").value,
-        lmin: document.getElementById("m3d_lmin").value,
-        lmax: document.getElementById("m3d_lmax").value
+        specname: document.getElementById("specname").value
     };
 
     $.ajax({
-        url: '/get_m3d_plot',
+        url: '/plot_fitted_result',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
@@ -123,31 +119,15 @@
                 <input type="submit" value="Upload">
             </form>
             <div class="form-group">
-                <label for="m3d_teff">teff:</label>
-                <input type="number" class="form-control" id="m3d_teff" name="m3d_teff" value="5777">
-            </div>
-            <div class="form-group">
-                <label for="m3d_logg">logg:</label>
-                <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
-            </div>
-            <div class="form-group">
-                <label for="m3d_feh">feh:</label>
-                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0">
-            </div>
-            <div class="form-group">
-                <label for="m3d_lmin">minimum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
-            </div>
-            <div class="form-group">
-                <label for="m3d_lmax">maximum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
+                <label for="specname">specname:</label>
+                <input type="text" class="form-control" id="specname" name="specname"  value="result_spectrum_422.spec_convolved.spec">
             </div>
 
             <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
             <div id="plot-container"></div>
 
 
-            <button class="btn btn-info" onclick="loadPlot3()">Load Plot</button>
+            <button class="btn btn-info" onclick="plot_fitted_result()">Plot result</button>
         </div>
 
     </div>
