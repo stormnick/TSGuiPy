@@ -11,6 +11,7 @@ from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis
 app = Flask(__name__)
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
+data_results_storage = {}
 
 
 def local_run():
@@ -187,13 +188,14 @@ def call_m3d(teff, logg, feh, lmin, lmax):
     return list(wavelength), list(norm_flux)
 
 
-@app.route('/get_m3d_plot')
+@app.route('/get_m3d_plot', methods=['POST'])
 def get_plot_m3d():
-    teff = request.args.get('teff', type=float)
-    logg = request.args.get('logg', type=float)
-    feh = request.args.get('feh', type=float)
-    lmin = request.args.get('lmin', type=float)
-    lmax = request.args.get('lmax', type=float)
+    data = request.json
+    teff = float(data['teff'])
+    logg = float(data['logg'])
+    feh = float(data['feh'])
+    lmin = float(data['lmin'])
+    lmax = float(data['lmax'])
     print("get_plot_m3d")
     wavelength, flux = call_m3d(teff, logg, feh, lmin, lmax)
     fig = plot.create_plot_data(wavelength, flux)
@@ -227,6 +229,7 @@ def process_file(filepath):
         config_parser = configparser.ConfigParser()
         config_parser.read(filepath)
         print(config_parser.sections())
+        data_results_storage["parsed_config"] = config_parser
         print(".cfg", filepath)
     else:
         print(filepath)

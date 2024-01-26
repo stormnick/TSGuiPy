@@ -49,24 +49,32 @@
     </script>
     <script>
     function loadPlot2() {
-    const m3d_teff_value = document.getElementById("m3d_teff").value;
-    const m3d_logg_value = document.getElementById("m3d_logg").value;
-    const m3d_feh_value = document.getElementById("m3d_feh").value;
-    const m3d_lmin_value = document.getElementById("m3d_lmin").value;
-    const m3d_lmax_value = document.getElementById("m3d_lmax").value;
-    const url = `/get_m3d_plot?teff=${encodeURIComponent(m3d_teff_value)}&logg=${encodeURIComponent(m3d_logg_value)}&feh=${encodeURIComponent(m3d_feh_value)}&lmin=${encodeURIComponent(m3d_lmin_value)}&lmax=${encodeURIComponent(m3d_lmax_value)}`;
+    const requestData = {
+        teff: document.getElementById("m3d_teff").value,
+        logg: document.getElementById("m3d_logg").value,
+        feh: document.getElementById("m3d_feh").value,
+        lmin: document.getElementById("m3d_lmin").value,
+        lmax: document.getElementById("m3d_lmax").value
+    };
 
-    $.getJSON(url, function(data) {
-        console.log(data); // Log the received data to the console
+    $.ajax({
+        url: '/get_m3d_plot',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        success: function(data) {
+            console.log(data); // Log the received data to the console
 
-        // Clear the plot-container
-        const plotContainer = document.getElementById('plot-container');
-        plotContainer.innerHTML = '';
+            // Clear the plot-container
+            const plotContainer = document.getElementById('plot-container');
+            plotContainer.innerHTML = '';
 
-        // Reconstruct the plot using the received data and layout
-        Plotly.newPlot('plot-container', data.data, data.layout);
-    }).fail(function(jqxhr, textStatus, error) {
-        console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+            // Reconstruct the plot using the received data and layout
+            Plotly.newPlot('plot-container', data.data, data.layout);
+        },
+        error: function(jqxhr, textStatus, error) {
+            console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+        }
     });
     }
 
