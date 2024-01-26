@@ -163,14 +163,18 @@
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = 'checkbox' + index;
-            checkbox.setAttribute('data-value', figData.value); // Store the value in the checkbox
-            checkbox.addEventListener('change', updateMeanValue);
+            checkbox.setAttribute('data-value', figData.value);
+            checkbox.checked = true; // Set the checkbox to be checked initially
+            checkbox.addEventListener('change', () => updateMeanValue(figures));
 
-            Plotly.newPlot(plotContainer, JSON.parse(figData.figure)); // Parse the figure part
+            Plotly.newPlot(plotContainer, JSON.parse(figData.figure));
             plotsGrid.appendChild(plotContainer);
             plotsGrid.appendChild(checkbox);
         });
+
+        updateMeanValue(figures); // Call updateMeanValue initially to display the mean value
     }
+
 
     function updateMeanValue(figures) {
         let sum = 0;
