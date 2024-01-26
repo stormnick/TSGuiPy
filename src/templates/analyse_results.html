@@ -35,7 +35,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById("myForm").addEventListener("submit", function(event) {
+            document.getElementById("linemaskChoiceForm").addEventListener("submit", function(event) {
                 event.preventDefault(); // Prevents the default form submission action
                 plot_fitted_result();
             });
@@ -56,7 +56,8 @@
 
     function plot_fitted_result() {
     const requestData = {
-        specname: document.getElementById("specname").value
+        specname: document.getElementById("specname").value,
+        linemask: document.getElementById("linemask").value
     };
 
     $.ajax({
@@ -125,9 +126,16 @@
                 <input type="file" name="folder" webkitdirectory directory multiple>
                 <input type="submit" value="Upload">
             </form>
-            <form id="myForm" method="post">
+            <form id="specnameChoiceForm" method="post">
                 <select id="specname">
                     {% for option in options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <form id="linemaskChoiceForm" method="post">
+                <select id="linemask">
+                    {% for option in options_linemask %}
                     <option value="{{ option }}">{{ option }}</option>
                     {% endfor %}
                 </select>
