@@ -35,9 +35,9 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById("linemaskChoiceForm").addEventListener("submit", function(event) {
+            document.getElementById("specnameChoiceForm").addEventListener("submit", function(event) {
                 event.preventDefault(); // Prevents the default form submission action
-                plot_fitted_result();
+                plot_fitted_result_one_star();
             });
         });
 
@@ -54,14 +54,13 @@
               .catch(error => console.log('Error:', error));
         }
 
-    function plot_fitted_result() {
+    function plot_fitted_result_one_star2() {
     const requestData = {
-        specname: document.getElementById("specname").value,
-        linemask: document.getElementById("linemask").value
+        specname: document.getElementById("specname").value
     };
 
     $.ajax({
-        url: '/plot_fitted_result',
+        url: '/plot_fitted_result_one_star',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
@@ -80,6 +79,7 @@
         }
     });
     }
+
 
 
     </script>
@@ -122,35 +122,70 @@
             <p class="lead">Choose folder with the results. If too many files (>1000?) please zip the results folder and upload it instead</p>
             <hr class="my-4">
             <p>Change.</p>
-            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-                <input type="file" name="folder" webkitdirectory directory multiple>
-                <input type="submit" value="Upload results folder">
-            </form>
-            <form id="uploadForm_zip" action="/upload_zip" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" accept=".zip">
-                <input type="submit" value="Upload .zip file with the results">
-            </form>
-
             <form id="specnameChoiceForm" method="post">
                 <select id="specname">
                     {% for option in options %}
                     <option value="{{ option }}">{{ option }}</option>
                     {% endfor %}
                 </select>
+                <input class="btn btn-info" type="submit" value="Generate results">
             </form>
-            <form id="linemaskChoiceForm" method="post">
-                <select id="linemask">
-                    {% for option in options_linemask %}
-                    <option value="{{ option }}">{{ option }}</option>
-                    {% endfor %}
-                </select>
-                <input class="btn btn-info" type="submit" value="Plot results">
-            </form>
+                <div id="plotsGrid"></div>
+                <div id="meanValue">Mean Value: </div>
 
             <div id="plot-container"></div>
         </div>
 
     </div>
+
+    <script>
+    function plot_fitted_result_one_star() {
+        const requestData = {
+            specname: document.getElementById("specname").value
+        };
+        // Send AJAX request to Flask to generate plots
+        $.ajax({
+            url: '/plot_fitted_result_one_star',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(requestData),
+            success: function(response) {
+                displayFigures(response.figures);
+            }
+        });
+    };
+
+    function displayFigures(figures) {
+        const plotsGrid = document.getElementById('plotsGrid');
+        plotsGrid.innerHTML = ''; // Clear existing content
+        figures.forEach((figData, index) => {
+            const plotContainer = document.createElement('div');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = 'checkbox' + index;
+            checkbox.setAttribute('data-value', figData.value); // Store the value in the checkbox
+            checkbox.addEventListener('change', updateMeanValue);
+
+            Plotly.newPlot(plotContainer, JSON.parse(figData.figure)); // Parse the figure part
+            plotsGrid.appendChild(plotContainer);
+            plotsGrid.appendChild(checkbox);
+        });
+    }
+
+    function updateMeanValue(figures) {
+        let sum = 0;
+        let count = 0;
+        figures.forEach((_, index) => {
+            const checkbox = document.getElementById('checkbox' + index);
+            if (checkbox.checked) {
+                sum += parseFloat(checkbox.getAttribute('data-value')); // Get the value from the checkbox
+                count++;
+            }
+        });
+        const meanValue = count > 0 ? sum / count : 0;
+        document.getElementById('meanValue').textContent = 'Mean Value: ' + meanValue.toFixed(2);
+    }
+    </script>
 
 </body>
 </html>

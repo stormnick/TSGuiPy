@@ -1,5 +1,6 @@
 import numpy as np
 import plotly.graph_objs as go
+import plotly.express as px
 
 def create_plot():
     trace = go.Scatter(x=[1, 2, 3], y=[4, 5, 6], mode='markers')
@@ -26,4 +27,19 @@ def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, ce
     ylimit = min(y_fitted2) - 0.03, max_y
     layout = go.Layout(title=title)
     fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout, layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
+    return fig
+
+
+def create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths,
+                              right_wavelengths, center_wavelengths, title):
+    fig = px.scatter(x=wavelength_observed_rv, y=flux_observed, title=title)
+    fig.update_layout(
+        xaxis_title="Wavelength",
+        yaxis_title="Flux",
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+            color="#7f7f7f"
+        )
+    )
     return fig

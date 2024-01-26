@@ -1,11 +1,13 @@
 import configparser
 import importlib
+import json
 import os
 import sys
 import tempfile
 import zipfile
 
 import numpy as np
+import plotly
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
@@ -349,7 +351,7 @@ def clean_up(directory):
 
 @app.route('/plot_fitted_result', methods=['POST'])
 def plot_fitted_result():
-    print("plot_fitted_result")
+    #print("plot_fitted_result")
     data = request.json
     specname = data['specname']
     linemask_to_plot = float(data['linemask'])
@@ -385,6 +387,39 @@ def plot_results():
 @app.route('/analyse_results')
 def analyse_results():
     return render_template('analyse_results.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
+
+@app.route('/plot_fitted_result_one_star', methods=['POST'])
+def plot_fitted_result_one_star():
+    #print("plot_fitted_result")
+    data = request.json
+    specname = data['specname']
+    print(specname)
+    figures = []
+    for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
+        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
+        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_idx]
+        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_idx]
+        # load spectra
+        wavelength_fitted = (data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
+        flux_fitted = (data_results_storage['fitted_spectra'][specname]["flux_fitted"])
+        wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
+        flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
+        rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
+        # apply rv correction
+        rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
+        wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
+
+        fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
+        title = f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}, flag error = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, flag warning = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}"
+        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title)
+        figure_data = {
+            "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
+            "value": fitted_value
+        }
+        figures.append(figure_data)
+
+    return jsonify(figures=figures)
+
 
 if __name__ == '__main__':
 
