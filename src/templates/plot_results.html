@@ -34,6 +34,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("linemaskChoiceForm").addEventListener("submit", function(event) {
+                event.preventDefault(); // Prevents the default form submission action
+                plot_fitted_result();
+            });
+        });
+
         function runPython() {
             const runLocation = document.getElementById("run-location").value;
             fetch('/run_python2', {
@@ -46,19 +53,15 @@
               .then(result => console.log(result))
               .catch(error => console.log('Error:', error));
         }
-    </script>
-    <script>
-    function loadPlot2() {
+
+    function plot_fitted_result() {
     const requestData = {
-        teff: document.getElementById("m3d_teff").value,
-        logg: document.getElementById("m3d_logg").value,
-        feh: document.getElementById("m3d_feh").value,
-        lmin: document.getElementById("m3d_lmin").value,
-        lmax: document.getElementById("m3d_lmax").value
+        specname: document.getElementById("specname").value,
+        linemask: document.getElementById("linemask").value
     };
 
     $.ajax({
-        url: '/get_m3d_plot',
+        url: '/plot_fitted_result',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
@@ -77,6 +80,7 @@
         }
     });
     }
+
 
     </script>
 </head>
@@ -98,14 +102,14 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/plot_results">Results Viewer</a>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Results Viewer</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/analyse_results">Analyse results</a>
                 </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Generate synthetic spectrum</a>
+                <li class="nav-item">
+                    <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
                 </li>
             </ul>
         </div>
@@ -114,32 +118,35 @@
     <!-- Jumbotron -->
     <div class="container">
         <div class="jumbotron">
-            <h1 class="display-4">Make your choice!</h1>
-            <p class="lead">:D.</p>
+            <h1 class="display-4">Plot your stars!</h1>
+            <p class="lead">Choose folder with the results. If too many files (>1000?) please zip the results folder and upload it instead</p>
             <hr class="my-4">
             <p>Change.</p>
-            <div class="form-group">
-                <label for="m3d_teff">teff:</label>
-                <input type="number" class="form-control" id="m3d_teff" name="m3d_teff" value="5777">
-            </div>
-            <div class="form-group">
-                <label for="m3d_logg">logg:</label>
-                <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
-            </div>
-            <div class="form-group">
-                <label for="m3d_feh">feh:</label>
-                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0">
-            </div>
-            <div class="form-group">
-                <label for="m3d_lmin">minimum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
-            </div>
-            <div class="form-group">
-                <label for="m3d_lmax">maximum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
-            </div>
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="folder" webkitdirectory directory multiple>
+                <input type="submit" value="Upload results folder">
+            </form>
+            <form id="uploadForm_zip" action="/upload_zip" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".zip">
+                <input type="submit" value="Upload .zip file with the results">
+            </form>
 
-            <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
+            <form id="specnameChoiceForm" method="post">
+                <select id="specname">
+                    {% for option in options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <form id="linemaskChoiceForm" method="post">
+                <select id="linemask">
+                    {% for option in options_linemask %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <input class="btn btn-info" type="submit" value="Plot results">
+            </form>
+
             <div id="plot-container"></div>
         </div>
 

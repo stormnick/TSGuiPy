@@ -209,19 +209,19 @@ def get_plot_m3d():
 @app.route('/upload_zip', methods=['POST'])
 def upload_zipped_file():
     if 'file' not in request.files:
-        return redirect(url_for('analyse_results'))
+        return redirect(url_for('plot_results'))
     file = request.files['file']
     if file.filename == '':
-        return redirect(url_for('analyse_results'))
+        return redirect(url_for('plot_results'))
     if file and file.filename.endswith('.zip'):
         filename = 'temp_uploaded_file.zip'
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, filename)
             file.save(file_path)
             extract_and_process_zip(file_path)
-        return redirect(url_for('analyse_results'))
+        return redirect(url_for('plot_results'))
     else:
-        return redirect(url_for('analyse_results'))
+        return redirect(url_for('plot_results'))
 
 def extract_and_process_zip(zip_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -264,7 +264,7 @@ def upload_folder():
     #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
     # now route to analyse_results
-    return redirect(url_for('analyse_results'))
+    return redirect(url_for('plot_results'))
 
 def process_file(folder_path, processed_dict):
     # linemask loading
@@ -377,6 +377,10 @@ def plot_fitted_result():
         print(specname, data_results_storage['fitted_spectra'])
     return None
 
+
+@app.route('/plot_results')
+def plot_results():
+    return render_template('plot_results.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
 
 @app.route('/analyse_results')
 def analyse_results():
