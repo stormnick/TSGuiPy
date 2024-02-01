@@ -310,6 +310,9 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename] = {}
         # fitted spectra
         wavelength, flux = np.loadtxt(os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec"), unpack=True, usecols=(0,1), dtype=float)
+        # argsort wavelength
+        wavelength, flux = zip(*sorted(zip(wavelength, flux)))
+        wavelength, flux = np.asarray(wavelength), np.asarray(flux)
         data_results_storage['fitted_spectra'][filename]["wavelength_fitted"] = wavelength
         data_results_storage['fitted_spectra'][filename]["flux_fitted"] = flux
         # observed spectra
