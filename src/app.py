@@ -165,7 +165,7 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, lmin, lmax):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter):
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
                    "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
                    "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
@@ -174,8 +174,8 @@ def call_m3d(teff, logg, feh, lmin, lmax):
                    "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
 
     atmosphere_type = "1D"  # "1D" or "3D"
-    hash_table_size = 100
-    n_nu = 1
+    hash_table_size = 100000
+    n_nu = 32
     mpi_cores = 1
     # if 3D atmosphere is used, then the following is needed
     dims = 23  # dimensions of the atmosphere
@@ -184,14 +184,20 @@ def call_m3d(teff, logg, feh, lmin, lmax):
     ny = 10  # only if Stagger
     nz = 230  # only if Stagger
     snap = 1  # snapshot number, only if Stagger
-    # nlte settings
-    nlte_flag = False
     # nlte settings, if nlte_flag = False, these are not used
-    nlte_iterations_max = 10
-    nlte_convergence_limit = 0.001
-    element_in_nlte = "Fe"  # can choose only one element
+    nlte_iterations_max = nlte_iter
+    nlte_convergence_limit = 0.01
+    if nlte_element != "none":
+        element_in_nlte = nlte_element
+        nlte_flag = True
+    else:
+        element_in_nlte = ""
+        nlte_flag = False
     element_abundances = {}
-    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, 1.0, lmin, lmax, 0.01, atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size, nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz, nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis_mine")
+    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                      atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
+                                                      nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
+                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis", verbose=True)
     return list(wavelength), list(norm_flux)
 
 
@@ -201,11 +207,15 @@ def get_plot_m3d():
     teff = float(data['teff'])
     logg = float(data['logg'])
     feh = float(data['feh'])
+    vmic = float(data['vmic'])
     lmin = float(data['lmin'])
     lmax = float(data['lmax'])
+    ldelta = float(data['deltal'])
+    nlte_element = data['nlte_element']
+    nlte_iter = int(data['nlte_iter'])
     print("get_plot_m3d")
-    wavelength, flux = call_m3d(teff, logg, feh, lmin, lmax)
-    fig = plot.create_plot_data(wavelength, flux)
+    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter)
+    fig = plot.plot_synthetic_data(wavelength, flux)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 @app.route('/upload_zip', methods=['POST'])

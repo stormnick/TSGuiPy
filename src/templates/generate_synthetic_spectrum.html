@@ -53,8 +53,12 @@
         teff: document.getElementById("m3d_teff").value,
         logg: document.getElementById("m3d_logg").value,
         feh: document.getElementById("m3d_feh").value,
+        vmic: document.getElementById("m3d_vmic").value,
         lmin: document.getElementById("m3d_lmin").value,
-        lmax: document.getElementById("m3d_lmax").value
+        lmax: document.getElementById("m3d_lmax").value,
+        deltal: document.getElementById("m3d_deltal").value,
+        nlte_element: document.getElementById("m3d_nlte_element").value,
+        nlte_iter: document.getElementById("m3d_nlte_iter").value,
     };
 
     $.ajax({
@@ -128,7 +132,11 @@
             </div>
             <div class="form-group">
                 <label for="m3d_feh">feh:</label>
-                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0">
+                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0.0">
+            </div>
+            <div class="form-group">
+                <label for="m3d_vmic">vmic:</label>
+                <input type="number" class="form-control" id="m3d_vmic" name="m3d_vmic"  value="1.00">
             </div>
             <div class="form-group">
                 <label for="m3d_lmin">minimum wavelength:</label>
@@ -138,6 +146,37 @@
                 <label for="m3d_lmax">maximum wavelength:</label>
                 <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
             </div>
+            <div class="form-group">
+                <label for="m3d_deltal">Delta wavelength:</label>
+                <input type="number" class="form-control" id="m3d_deltal" name="m3d_deltal"  value="0.01">
+            </div>
+            <div class="form-group">
+                <label for="m3d_nlte_element">NLTE element:</label>
+                <select class="form-control" id="m3d_nlte_element" name="m3d_nlte_element"  value="none">
+                    <option>none</option>
+                    <option>Al</option>
+                    <option>Ba</option>
+                    <option>Ca</option>
+                    <option>Co</option>
+                    <option>Eu</option>
+                    <option>Fe</option>
+                    <option>H</option>
+                    <option>Mg</option>
+                    <option>Mn</option>
+                    <option>Na</option>
+                    <option>Ni</option>
+                    <option>O</option>
+                    <option>Si</option>
+                    <option>Sr</option>
+                    <option>Ti</option>
+                    <option>Y</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="m3d_nlte_iter">NLTE iterations:</label>
+                <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
+            </div>
+
 
             <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
             <div id="plot-container"></div>
