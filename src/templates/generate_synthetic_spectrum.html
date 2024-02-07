@@ -59,6 +59,7 @@
         deltal: document.getElementById("m3d_deltal").value,
         nlte_element: document.getElementById("m3d_nlte_element").value,
         nlte_iter: document.getElementById("m3d_nlte_iter").value,
+        m3d_xfeabundances: document.getElementById("m3d_xfeabundances").value
     };
 
     $.ajax({
@@ -175,6 +176,10 @@
             <div class="form-group">
                 <label for="m3d_nlte_iter">NLTE iterations:</label>
                 <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
+            </div>
+            <div class="form-group">
+                <label for="m3d_xfeabundances">Change abundance in the format: ELEMENT_NUMBER [X/Fe] . E.g. 12 1.0</label>
+                <textarea class="form-control" id="m3d_xfeabundances" name="m3d_xfeabundances" rows="2"></textarea>
             </div>
 
 

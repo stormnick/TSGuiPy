@@ -13,6 +13,7 @@ from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
 from scripts.loading_configs import TSFitPyConfig
 from scripts.auxiliary_functions import apply_doppler_correction
+from scripts.solar_abundances import periodic_table
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
@@ -165,7 +166,7 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances):
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
                    "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
                    "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
@@ -174,8 +175,8 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter)
                    "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
 
     atmosphere_type = "1D"  # "1D" or "3D"
-    hash_table_size = 100000
-    n_nu = 32
+    hash_table_size = 100
+    n_nu = 1
     mpi_cores = 1
     # if 3D atmosphere is used, then the following is needed
     dims = 23  # dimensions of the atmosphere
@@ -194,10 +195,19 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter)
         element_in_nlte = ""
         nlte_flag = False
     element_abundances = {}
+    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
+    xfeabundances = xfeabundances.split("\n")
+    for xfeabundance in xfeabundances:
+        if xfeabundance != "":
+            element, abundance = xfeabundance.split(" ")
+            # convert element to element name
+            element = int(element)
+            element_name = periodic_table[element]
+            element_abundances[element_name] = float(abundance)
     wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                       atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
-                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis", verbose=True)
+                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis", verbose=False)
     return list(wavelength), list(norm_flux)
 
 
@@ -213,9 +223,10 @@ def get_plot_m3d():
     ldelta = float(data['deltal'])
     nlte_element = data['nlte_element']
     nlte_iter = int(data['nlte_iter'])
+    xfeabundances = data['m3d_xfeabundances']
     print("get_plot_m3d")
-    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter)
-    fig = plot.plot_synthetic_data(wavelength, flux)
+    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances)
+    fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 @app.route('/upload_zip', methods=['POST'])

@@ -36,10 +36,11 @@ def create_plot_data(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, ce
     )
     return fig
 
-def plot_synthetic_data(x_fitted, y_fitted):
+def plot_synthetic_data(x_fitted, y_fitted, lmin, lmax):
     # plot fitted as line
     trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
-    fig = go.Figure(data=[trace])
+    xlimits = [lmin, lmax]
+    fig = go.Figure(data=[trace], layout_xaxis_range=xlimits)
     fig.update_layout(
         xaxis_title="Wavelength",
         yaxis_title="Normalised Flux"
