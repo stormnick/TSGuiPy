@@ -166,12 +166,14 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None):
+    if linelist_path is None:
+        linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
                    "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
                    "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
                    "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/",
-                   "line_list_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/",
+                   "line_list_path": linelist_path,
                    "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
 
     atmosphere_type = "1D"  # "1D" or "3D"
@@ -485,10 +487,12 @@ def plot_fitted_result_one_star():
             rotation = data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]
             resolution = data_results_storage['fitted_spectra'][specname]['resolution']
 
-            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict']
+            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
             xfeabundances[data_results_storage["fitted_element"]] = -40
 
-            wavelength_m3d, flux_m3d = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution)
+            linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting_cemp_goldstandard/"
+
+            wavelength_m3d, flux_m3d = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
         else:
             wavelength_m3d, flux_m3d = [], []
 
