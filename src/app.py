@@ -458,8 +458,8 @@ def plot_fitted_result_one_star():
     #print("plot_fitted_result")
     data = request.json
     specname = data['specname']
-    overplot_synthetic_data = True #data['overplot_synthetic_data']
-    print(specname)
+    overplot_synthetic_data = data['overplotBlendsCheck']
+    #print(specname)
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
         center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
