@@ -166,7 +166,7 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances, vmac, rotation, resolution):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution):
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
                    "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
                    "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
@@ -194,16 +194,9 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
     else:
         element_in_nlte = ""
         nlte_flag = False
-    element_abundances = {}
+    element_abundances = xfeabundances
     # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
-    xfeabundances = xfeabundances.split("\n")
-    for xfeabundance in xfeabundances:
-        if xfeabundance != "":
-            element, abundance = xfeabundance.split(" ")
-            # convert element to element name
-            element = int(element)
-            element_name = periodic_table[element]
-            element_abundances[element_name] = float(abundance)
+
     wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                       atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
@@ -229,7 +222,19 @@ def get_plot_m3d():
     resolution = float(data['resolution'])
     rotation = float(data['rotation'])
     #print("get_plot_m3d")
-    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances, vmac, rotation, resolution)
+
+    element_abundances = {}
+
+    xfeabundances = xfeabundances.split("\n")
+    for xfeabundance in xfeabundances:
+        if xfeabundance != "":
+            element, abundance = xfeabundance.split(" ")
+            # convert element to element name
+            element = int(element)
+            element_name = periodic_table[element]
+            element_abundances[element_name] = float(abundance)
+
+    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution)
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
@@ -282,7 +287,10 @@ def upload_folder():
         # find a file that ends with .cfg
         data_results_storage['fitted_spectra'] = {}
         for file in files:
-            filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+            if "/" in file.filename:
+                filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+            else:
+                filepath = os.path.join(temp_dir, file.filename)
             file.save(filepath)
         parsed_config_dict = load_output_data(temp_dir)
         data_results_storage["parsed_config_dict"] = parsed_config_dict
@@ -313,13 +321,21 @@ def process_file(folder_path, processed_dict):
 
     output_file_df = processed_dict["output_file_df"]
     fitted_element = processed_dict['fitted_element']
+
+    data_results_storage["fitting_method"] = processed_dict["fitting_method"]
+
+    fitlist = processed_dict["parsed_fitlist"]
+    fitlist_parameters: np.ndarray = fitlist.get_spectra_parameters_for_fit(processed_dict["vmic_input_bool"], processed_dict["vmac_input_bool"], processed_dict["rotation_input_bool"])
+
     if processed_dict["fitting_method"] == "lbl" or processed_dict["fitting_method"] == "vmic":
         if fitted_element != "Fe":
             column_name = f"{fitted_element}_Fe"
             fitted_value_label = f"[{fitted_element}/Fe]"
+            data_results_storage["fitted_element"] = fitted_element
         else:
             column_name = "Fe_H"
             fitted_value_label = "[Fe/H]"
+            data_results_storage["fitted_element"] = "Fe"
         fitted_value = column_name
     elif processed_dict["fitting_method"] == "teff":
         fitted_value = "Teff"
@@ -329,6 +345,7 @@ def process_file(folder_path, processed_dict):
         fitted_value_label = "logg"
 
     data_results_storage["fitted_value_label"] = fitted_value_label
+
 
     # load spectra
     for (filename, spectra_rv) in zip(data_results_storage["parsed_config_dict"]["specname_fitlist"], data_results_storage["parsed_config_dict"]["rv_fitlist"]):
@@ -346,6 +363,18 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename]["flux_observed"] = flux_observed
         # rv correction
         data_results_storage['fitted_spectra'][filename]['spectra_rv'] = spectra_rv
+        # find the spectraname in fitlist_parameters
+        index_fitlist = np.where(fitlist_parameters[:, 0] == filename)[0][0]
+        # specname, rv_list, teff_list, logg_list, feh_list, vmic_list, vmac_list, rotation_list, abundance_list, resolution_list, snr_list
+        data_results_storage['fitted_spectra'][filename]['teff'] = fitlist_parameters[index_fitlist][2]
+        data_results_storage['fitted_spectra'][filename]['logg'] = fitlist_parameters[index_fitlist][3]
+        #data_results_storage['fitted_spectra'][filename]['feh'] = fitlist_parameters[index_fitlist][4]
+        #data_results_storage['fitted_spectra'][filename]['vmic'] = fitlist_parameters[index_fitlist][5]
+        #data_results_storage['fitted_spectra'][filename]['vmac'] = fitlist_parameters[index_fitlist][6]
+        #data_results_storage['fitted_spectra'][filename]['rotation'] = fitlist_parameters[index_fitlist][7]
+        data_results_storage['fitted_spectra'][filename]['abundance_dict'] = fitlist_parameters[index_fitlist][8]
+        data_results_storage['fitted_spectra'][filename]['resolution'] = fitlist_parameters[index_fitlist][9]
+
         # load all fitted values for each linemask
         data_results_storage['fitted_spectra'][filename]['fitted_rv'] = {}
         data_results_storage['fitted_spectra'][filename]['flag_error'] = {}
@@ -355,6 +384,8 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename]['ew'] = {}
         data_results_storage['fitted_spectra'][filename]['vmac'] = {}
         data_results_storage['fitted_spectra'][filename]['rotation'] = {}
+        data_results_storage['fitted_spectra'][filename]['vmic'] = {}
+        data_results_storage['fitted_spectra'][filename]['Fe_H'] = {}
 
         df_correct_specname_indices = output_file_df["specname"] == filename
         output_file_df_specname = output_file_df[df_correct_specname_indices]
@@ -370,6 +401,8 @@ def process_file(folder_path, processed_dict):
             data_results_storage['fitted_spectra'][filename]['ew'][linemask_idx] = output_file_df_specname["ew"].values[output_file_df_index]
             data_results_storage['fitted_spectra'][filename]['vmac'][linemask_idx] = output_file_df_specname["Macroturb"].values[output_file_df_index]
             data_results_storage['fitted_spectra'][filename]['rotation'][linemask_idx] = output_file_df_specname["rotation"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['vmic'][linemask_idx] = output_file_df_specname["Microturb"].values[output_file_df_index]
+            data_results_storage['fitted_spectra'][filename]['Fe_H'][linemask_idx] = output_file_df_specname["Fe_H"].values[output_file_df_index]
 
 
 
@@ -425,6 +458,7 @@ def plot_fitted_result_one_star():
     #print("plot_fitted_result")
     data = request.json
     specname = data['specname']
+    overplot_synthetic_data = True #data['overplot_synthetic_data']
     print(specname)
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
@@ -441,13 +475,31 @@ def plot_fitted_result_one_star():
         rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
         wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
 
+        if overplot_synthetic_data and (data_results_storage["fitting_method"] == "lbl" or data_results_storage["fitting_method"] == "vmic"):
+            teff, logg = data_results_storage['fitted_spectra'][specname]['teff'], data_results_storage['fitted_spectra'][specname]['logg']
+            feh = data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx]
+            vmic = data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx]
+            lmin, lmax = left_wavelengths - 0.5, right_wavelengths + 0.5
+            ldelta = 0.01
+            vmac = data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]
+            rotation = data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]
+            resolution = data_results_storage['fitted_spectra'][specname]['resolution']
+
+            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict']
+            xfeabundances[data_results_storage["fitted_element"]] = -40
+
+            wavelength_m3d, flux_m3d = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution)
+        else:
+            wavelength_m3d, flux_m3d = [], []
+
+
         fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
         title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, "
                  f"chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
                  f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
                  f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, rot = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
                  f"rv_fit = {rv_fitted:.2f}")
-        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title)
+        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_m3d, flux_m3d)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
             "value": fitted_value

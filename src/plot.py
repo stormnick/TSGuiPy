@@ -48,7 +48,7 @@ def plot_synthetic_data(x_fitted, y_fitted, lmin, lmax):
     return fig
 
 
-def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title):
+def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title, wavelength_synthetic=[], flux_synthetic=[]):
     # plot fitted as line
     trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
     # plot observed data as a scatter plot
@@ -62,6 +62,8 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
     # plot the centre line as a vertical line in red
     trace_centre_line = go.Scatter(x=[centre_line, centre_line], y=[0, 2], mode='lines', line=dict(color='blue'),
                                    showlegend=False)
+    # plot the synthetic data as a line but with alpha=0.5 and grey colour
+    trace_synthetic = go.Scatter(x=wavelength_synthetic, y=flux_synthetic, mode='lines', line=dict(color='grey'), opacity=0.5, name='synthetic')
     # xlimit is the range of x values to plot
     xlimit = [left_line - 0.1, right_line + 0.1]
     # find y_fitted that is within xlimit
@@ -72,7 +74,7 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
     else:
         ylimit = 0, 1.03
     layout = go.Layout(title=title)
-    fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout,
+    fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line, trace_synthetic], layout=layout,
                     layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
     fig.update_layout(
         xaxis_title="Wavelength",
