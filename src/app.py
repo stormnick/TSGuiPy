@@ -166,7 +166,7 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances, vmac, rotation, resolution):
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
                    "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
                    "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
@@ -207,7 +207,8 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
     wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                       atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
-                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis", verbose=False)
+                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
+                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
     return list(wavelength), list(norm_flux)
 
 
@@ -224,8 +225,11 @@ def get_plot_m3d():
     nlte_element = data['nlte_element']
     nlte_iter = int(data['nlte_iter'])
     xfeabundances = data['m3d_xfeabundances']
-    print("get_plot_m3d")
-    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances)
+    vmac = float(data['vmac'])
+    resolution = float(data['resolution'])
+    rotation = float(data['rotation'])
+    #print("get_plot_m3d")
+    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances, vmac, rotation, resolution)
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
