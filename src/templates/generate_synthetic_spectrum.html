@@ -49,6 +49,8 @@
     </script>
     <script>
     function loadPlot2() {
+    let currentShapeIndex = null; // Track the current shape index
+
     const requestData = {
         teff: document.getElementById("m3d_teff").value,
         logg: document.getElementById("m3d_logg").value,
@@ -77,8 +79,62 @@
             const plotContainer = document.getElementById('plot-container');
             plotContainer.innerHTML = '';
 
+            // plot parsed linelist
+            const columnsContainer = document.getElementById('columns');
+            data.columns.forEach(column => {
+                console.log(column);
+                const button = document.createElement('button');
+                // make button at least 10 px high and 100 px wide
+                button.style.height = '20px';
+                button.style.width = '120px';
+                button.textContent = column.name;
+                // text inside the button is the column name
+                button.style.margin = '5px';
+                button.style.backgroundColor = 'lightgrey';
+                button.style.border = 'none';
+                button.style.borderRadius = '5px';
+                button.style.cursor = 'pointer';
+                button.style.color = 'black';
+                // font color is black
+                button.style.fontSize = '10px';
+                // font color is black
+                button.style.fontWeight = 'bold';
+                button.style.textAlign = 'center';
+                button.style.textDecoration = 'none';
+
+                button.onclick = function() {
+                    // First, remove the existing line if there is one
+                    if (currentShapeIndex !== null) {
+                        Plotly.relayout('plot-container', {
+                            shapes: [] // Clear existing shapes
+                        });
+                    }
+
+                    // Update the plot to include a vertical line at column's x_value
+                    const update = {
+                        shapes: [{
+                            type: 'line',
+                            x0: column.wavelength,
+                            y0: 0,
+                            x1: column.wavelength,
+                            y1: 1.05,
+                            xref: 'x',
+                            yref: 'paper',
+                            line: {
+                                color: 'blue',
+                                width: 2
+                            }
+                        }]
+                    };
+                    Plotly.relayout('plot-container', update);
+                    currentShapeIndex = 0; // This works under the assumption you only have this one shape
+                };
+                columnsContainer.appendChild(button);
+            });
+
             // Reconstruct the plot using the received data and layout
             Plotly.newPlot('plot-container', data.data, data.layout);
+
         },
         error: function(jqxhr, textStatus, error) {
             console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
@@ -199,6 +255,7 @@
 
 
             <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
+            <div id="columns"></div>
             <div id="plot-container"></div>
         </div>
 

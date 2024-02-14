@@ -199,12 +199,13 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
     element_abundances = xfeabundances
     # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
 
-    wavelength, norm_flux = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+    wavelength, norm_flux, parsed_linelist_info = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                       atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
                                                       nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
-                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
-    return list(wavelength), list(norm_flux)
+                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
+                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=-5)
+    return list(wavelength), list(norm_flux), parsed_linelist_info
 
 
 @app.route('/get_m3d_plot', methods=['POST'])
@@ -236,9 +237,14 @@ def get_plot_m3d():
             element_name = periodic_table[element]
             element_abundances[element_name] = float(abundance)
 
-    wavelength, flux = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution)
+    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution)
+    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
+    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
+    parsed_linelist_dict = []
+    for i, (wavelength_element, element, loggf) in enumerate(parsed_linelist_data):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element, "loggf": loggf, "name": f"{wavelength_element:.2f} {element} {loggf:.3f}"})
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax)
-    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
 
 @app.route('/upload_zip', methods=['POST'])
 def upload_zipped_file():
@@ -492,7 +498,7 @@ def plot_fitted_result_one_star():
 
             linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting_cemp_goldstandard/"
 
-            wavelength_m3d, flux_m3d = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
+            wavelength_m3d, flux_m3d, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
         else:
             wavelength_m3d, flux_m3d = [], []
 
