@@ -81,6 +81,8 @@
 
             // plot parsed linelist
             const columnsContainer = document.getElementById('columns');
+            // first clear the columns container
+            columnsContainer.innerHTML = '';
             data.columns.forEach(column => {
                 console.log(column);
                 const button = document.createElement('button');
@@ -124,6 +126,24 @@
                                 color: 'blue',
                                 width: 2
                             }
+                        }
+                        // write text which is the column name
+                        ],
+                        annotations: [{
+                            x: column.wavelength + 0.015,
+                            y: 1.10,
+                            xref: 'x',
+                            yref: 'paper',
+                            text: column.element,
+                            showarrow: false,
+                            arrowhead: 7,
+                            font: {
+                                size: 12,
+                                color: 'black'
+                            },
+                            // center the text
+                            xanchor: 'middle',
+                            yanchor: 'middle'
                         }]
                     };
                     Plotly.relayout('plot-container', update);
