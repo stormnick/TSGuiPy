@@ -235,16 +235,21 @@ def get_plot_m3d():
         if xfeabundance != "":
             element, abundance = xfeabundance.split(" ")
             # convert element to element name
-            element = int(element)
-            element_name = periodic_table[element]
+            # try to convert to int
+            try:
+                element = int(element)
+                element_name = periodic_table[element]
+            except ValueError:
+                # if it fails, it is a string
+                element_name = element
             element_abundances[element_name] = float(abundance)
 
     wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution, loggf_limit=loggf_limit)
     #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
     # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
     parsed_linelist_dict = []
-    for i, (wavelength_element, element, loggf) in enumerate(parsed_linelist_data):
-        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element, "loggf": loggf, "name": f"{wavelength_element:.2f} {element} {loggf:.3f}"})
+    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_data):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]
