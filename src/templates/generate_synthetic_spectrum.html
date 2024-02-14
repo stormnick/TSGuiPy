@@ -65,7 +65,8 @@
         vmac: document.getElementById("m3d_vmac").value,
         resolution: document.getElementById("m3d_resolution").value,
         rotation: document.getElementById("m3d_rotation").value,
-        obs_rv: document.getElementById("obs_rv").value
+        obs_rv: document.getElementById("obs_rv").value,
+        loggf_limit: document.getElementById("m3d_loggf_limit").value
     };
 
     $.ajax({
@@ -283,7 +284,10 @@
                 <textarea class="form-control" id="m3d_xfeabundances" name="m3d_xfeabundances" rows="2"></textarea>
             </div>
 
-
+            <div class="form-group">
+                <label for="m3d_loggf_limit">loggf limit buttons:</label>
+                <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit"  value="-5.0">
+            </div>
             <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
             <div id="columns"></div>
             <div id="plot-container"></div>

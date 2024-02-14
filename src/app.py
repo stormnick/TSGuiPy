@@ -166,7 +166,7 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None):
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=-5.0):
     if linelist_path is None:
         linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
     m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
@@ -204,7 +204,7 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
                                                       nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
                                                       verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
-                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=-5)
+                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit)
     return list(wavelength), list(norm_flux), parsed_linelist_info
 
 
@@ -225,6 +225,7 @@ def get_plot_m3d():
     resolution = float(data['resolution'])
     rotation = float(data['rotation'])
     obs_rv = float(data['obs_rv'])
+    loggf_limit = float(data['loggf_limit'])
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -238,7 +239,7 @@ def get_plot_m3d():
             element_name = periodic_table[element]
             element_abundances[element_name] = float(abundance)
 
-    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution)
+    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution, loggf_limit=loggf_limit)
     #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
     # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
     parsed_linelist_dict = []
@@ -247,6 +248,7 @@ def get_plot_m3d():
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]
+        wavelength_observed = np.asarray(wavelength_observed)
         wavelength_observed = apply_doppler_correction(wavelength_observed, obs_rv)
 
         # cut the observed spectra to the same range as the synthetic spectra
