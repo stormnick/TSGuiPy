@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
-data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": []}
+data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {}}
 
 
 def local_run():
@@ -224,6 +224,7 @@ def get_plot_m3d():
     vmac = float(data['vmac'])
     resolution = float(data['resolution'])
     rotation = float(data['rotation'])
+    obs_rv = float(data['obs_rv'])
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -243,7 +244,18 @@ def get_plot_m3d():
     parsed_linelist_dict = []
     for i, (wavelength_element, element, loggf) in enumerate(parsed_linelist_data):
         parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element, "loggf": loggf, "name": f"{wavelength_element:.2f} {element} {loggf:.3f}"})
-    fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax)
+    if data_results_storage["observed_spectra"]:
+        wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
+        flux_observed = data_results_storage['observed_spectra']["flux"]
+        wavelength_observed = apply_doppler_correction(wavelength_observed, obs_rv)
+
+        # cut the observed spectra to the same range as the synthetic spectra
+        wavelength_observed, flux_observed = zip(*[(wavelength_observed[i], flux_observed[i]) for i in range(len(wavelength_observed)) if lmin - 2 <= wavelength_observed[i] <= lmax + 2])
+        # convert to lists
+        wavelength_observed, flux_observed = list(wavelength_observed), list(flux_observed)
+    else:
+        wavelength_observed, flux_observed = [], []
+    fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
 
 @app.route('/upload_zip', methods=['POST'])
@@ -308,6 +320,31 @@ def upload_folder():
     # Optionally, clean up by deleting the temporary files
     # now route to analyse_results
     return redirect(url_for('plot_results'))
+
+@app.route('/upload_spectra', methods=['POST'])
+def upload_spectra():
+    # Get the uploaded files
+    file = request.files['file']
+    print(file)
+    # Temporary directory to save uploaded files
+    # create temp dir
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if "/" in file.filename:
+            filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+        else:
+            filepath = os.path.join(temp_dir, file.filename)
+        file.save(filepath)
+        wavelength_observed, flux_observed = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
+        data_results_storage['observed_spectra']["wavelength"] = wavelength_observed
+        data_results_storage['observed_spectra']["flux"] = flux_observed
+        #parsed_config_dict = load_output_data(temp_dir)
+        #data_results_storage["parsed_config_dict"] = parsed_config_dict
+        #process_file(temp_dir, data_results_storage["parsed_config_dict"])
+        #data_results_storage["options"] = data_results_storage["parsed_config_dict"]["specname_fitlist"]
+    #options = data_results_storage["options"]
+    # Optionally, clean up by deleting the temporary files
+    # now route to analyse_results
+    return redirect(url_for('generate_synthetic_spectrum'))
 
 def process_file(folder_path, processed_dict):
     # linemask loading
