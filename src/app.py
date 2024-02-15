@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
 from scripts.loading_configs import TSFitPyConfig
-from scripts.auxiliary_functions import apply_doppler_correction
+from scripts.auxiliary_functions import apply_doppler_correction, calculate_equivalent_width
 from scripts.solar_abundances import periodic_table
 
 app = Flask(__name__)
@@ -264,6 +264,49 @@ def get_plot_m3d():
         wavelength_observed, flux_observed = [], []
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
+
+@app.route('/synthetic_calculate_integral', methods=['POST'])
+def synthetic_calculate_integral():
+    """left_x_boundary: document.getElementById('left_x_boundary').value,
+        right_x_boundary: document.getElementById('right_x_boundary').value,
+        plot_data: document.getElementById('plot-container').data"""
+    data = request.json
+    left_x_boundary = float(data['left_x_boundary'])
+    right_x_boundary = float(data['right_x_boundary'])
+    plot_data = data['plot_data']
+
+    # if left_x_boundary > right_x_boundary, swap them
+    if left_x_boundary > right_x_boundary:
+        left_x_boundary, right_x_boundary = right_x_boundary, left_x_boundary
+
+    # if left_x_boundary == right_x_boundary, return 0
+    if left_x_boundary == right_x_boundary:
+        return jsonify({"integral_synthetic": 0, "integral_observed": 0})
+
+    trace = plot_data[0]
+    trace_obs = plot_data[1]
+
+    x_fitted = np.asarray(trace['x'])
+    y_fitted = np.asarray(trace['y'])
+
+    x_obs = np.asarray(trace_obs['x'])
+    y_obs = np.asarray(trace_obs['y'])
+
+    # find the indices of wavelength that are within lmin and lmax
+    indices_fitted = np.where((x_fitted >= left_x_boundary) & (x_fitted <= right_x_boundary))
+    indices_observed = np.where((x_obs >= left_x_boundary) & (x_obs <= right_x_boundary))
+    # calculate the integral
+    # if the indices are empty, return 0
+    if np.size(indices_fitted) == 0:
+        ew_fitted = 0
+    else:
+        ew_fitted = calculate_equivalent_width(x_fitted[indices_fitted], y_fitted[indices_fitted], left_x_boundary, right_x_boundary) * 1000
+    if np.size(indices_observed) == 0:
+        ew_observed = 0
+    else:
+        ew_observed = calculate_equivalent_width(x_obs[indices_observed], y_obs[indices_observed], left_x_boundary, right_x_boundary) * 1000
+    return jsonify({"integral_synthetic": round(ew_fitted, 3), "integral_observed": round(ew_observed, 3)})
+
 
 @app.route('/upload_zip', methods=['POST'])
 def upload_zipped_file():

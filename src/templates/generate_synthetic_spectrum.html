@@ -110,7 +110,8 @@
                     // First, remove the existing line if there is one
                     if (currentShapeIndex !== null) {
                         Plotly.relayout('plot-container', {
-                            shapes: [] // Clear existing shapes
+                            shapes: [], // Clear existing shapes
+                            annotations: []
                         });
                     }
 
@@ -163,6 +164,69 @@
         }
     });
     }
+
+    function updateIntegrals() {
+    let currentShapeIndexIntegrals = null; // Track the current shape index
+    const requestData = {
+        left_x_boundary: document.getElementById('left_x_boundary').value,
+        right_x_boundary: document.getElementById('right_x_boundary').value,
+        plot_data: document.getElementById('plot-container').data
+    };
+
+    $.ajax({
+        url: '/synthetic_calculate_integral',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        success: function(data) {
+            document.getElementById('integral_synthetic').innerText = "Synthetic EW: " + data.integral_synthetic;
+            document.getElementById('integral_observed').innerText = "Observed EW: " + data.integral_observed;
+            // Update Plotly graph here
+            // First, remove the existing line if there is one
+            if (currentShapeIndexIntegrals !== null) {
+                Plotly.relayout('plot-container', {
+                    shapes: [], // Clear existing shapes
+                    annotations: []
+                });
+            }
+            // Update the plot to include a vertical line at column's x_value
+            const update = {
+                shapes: [{
+                    type: 'line',
+                    x0: requestData.left_x_boundary,
+                    y0: 0,
+                    x1: requestData.left_x_boundary,
+                    y1: 1.05,
+                    xref: 'x',
+                    yref: 'paper',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                },
+                {
+                    type: 'line',
+                    x0: requestData.right_x_boundary,
+                    y0: 0,
+                    x1: requestData.right_x_boundary,
+                    y1: 1.05,
+                    xref: 'x',
+                    yref: 'paper',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                }
+                ]
+            };
+            Plotly.relayout('plot-container', update);
+            currentShapeIndexIntegrals = 0; // This works under the assumption you only have this one shape
+    },
+        error: function(jqxhr, textStatus, error) {
+            console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+        }
+    });
+}
 
     </script>
 </head>
@@ -289,6 +353,17 @@
                 <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit"  value="-5.0">
             </div>
             <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
+            <div class="form-group">
+                <label for="left_x_boundary">Left x boundary EW calculation:</label>
+                <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
+            </div>
+            <div class="form-group">
+                <label for="right_x_boundary">Right x boundary EW calculation:</label>
+                <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
+            </div>
+            <button class="btn btn-info" onclick="updateIntegrals()">Calculate integrals</button>
+            <div id="integral_synthetic"></div>
+            <div id="integral_observed"></div>
             <div id="columns"></div>
             <div id="plot-container"></div>
         </div>
