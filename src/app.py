@@ -227,6 +227,7 @@ def get_plot_m3d():
     rotation = float(data['rotation'])
     obs_rv = float(data['obs_rv'])
     loggf_limit = float(data['loggf_limit'])
+    linelist_path = data['linelist_path']
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -245,7 +246,9 @@ def get_plot_m3d():
                 element_name = element
             element_abundances[element_name] = float(abundance)
 
-    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, element_abundances, vmac, rotation, resolution, loggf_limit=loggf_limit)
+    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+                                                      nlte_iter, element_abundances, vmac, rotation, resolution,
+                                                      loggf_limit=loggf_limit, linelist_path=linelist_path)
     #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
     # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
     parsed_linelist_dict = []
