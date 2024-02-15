@@ -22,11 +22,23 @@
             border-radius: 0.3rem;
             cursor: pointer;
         }
-        .btn-custom:hover {
-            background-color: #45a049;
-        }
         .container {
             padding-top: 2rem;
+        }
+        .flex-container {
+            display: flex;
+            align-items: center; /* Aligns items vertically in the center */
+            justify-content: space-between; /* Adds space between the flex items */
+            margin-bottom: 10px; /* Adds some space between each form-group */
+        }
+
+        .flex-item {
+            flex: 1; /* Allows items to grow and fill the space */
+            margin-right: 5px; /* Adds some space between label and input */
+        }
+
+        .flex-item input {
+            width: 100%; /* Makes input take the full width of its container */
         }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -297,104 +309,158 @@
     <!-- Jumbotron -->
     <div class="container">
         <div class="jumbotron">
-            <h1 class="display-4">Make your choice!</h1>
-            <p class="lead">:D.</p>
+            <h1 class="display-4"></h1>
+            <p class="lead">Generate synthetic spectra and overplot observed one.</p>
             <hr class="my-4">
-            <form id="uploadForm" action="/upload_spectra" method="post" enctype="multipart/form-data">
-                <input type="file" name="file">
-            <input type="submit" value="Upload observed spectra">
-            </form>
-             <div class="form-group">
-                <label for="obs_rv">RV:</label>
-                <input type="number" class="form-control" id="obs_rv" name="obs_rv" value="0.0">
+            <div class="row form-group">
+                <div class="col-md-8">
+                    <form id="uploadForm" action="/upload_spectra" method="post" enctype="multipart/form-data">
+                        <div class="row"> <!-- Ensures elements are in a flex row -->
+                            <div class="col-8"> <!-- Adjust the size as needed -->
+                                <input type="file" name="file">
+                            </div>
+                            <div class="col-4"> <!-- Adjust the size as needed -->
+                                <input type="submit" value="Upload observed spectra" class="btn btn-primary">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-2">
+                    <label for="obs_rv">Observed RV</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="obs_rv" name="obs_rv" value="0.0">
+                </div>
             </div>
             <hr class="my-4">
-            <p>Change.</p>
-            <div class="form-group">
-                <label for="m3d_teff">teff:</label>
-                <input type="number" class="form-control" id="m3d_teff" name="m3d_teff" value="5777">
+            <div class="row form-group">
+                <div class="col-sm-1">
+                    <label for="m3d_teff">Teff</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_teff" name="m3d_teff" value="5777">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_logg">logg</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_feh">[Fe/H]</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0.0">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_vmic">Vmic</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_vmic" name="m3d_vmic"  value="1.00">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_lmin">Min λ</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_lmax">Max λ</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_deltal">Delta λ</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_deltal" name="m3d_deltal"  value="0.01">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="m3d_logg">logg:</label>
-                <input type="number" class="form-control" id="m3d_logg" name="m3d_logg"  value="4.44">
+            <div class="row form-group">
+                <div class="col-sm-1">
+                    <label for="m3d_vmac">Vmac</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_vmac" name="m3d_vmac"  value="0">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_rotation">Rotation</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_rotation" name="m3d_rotation"  value="0">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_resolution">Resolution</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_resolution" name="m3d_resolution"  value="0">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="m3d_feh">feh:</label>
-                <input type="number" class="form-control" id="m3d_feh" name="m3d_feh"  value="0.0">
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label for="m3d_nlte_element">NLTE element:</label>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="m3d_nlte_element" name="m3d_nlte_element"  value="none">
+                        <option>none</option>
+                        <option>Al</option>
+                        <option>Ba</option>
+                        <option>Ca</option>
+                        <option>Co</option>
+                        <option>Eu</option>
+                        <option>Fe</option>
+                        <option>H</option>
+                        <option>Mg</option>
+                        <option>Mn</option>
+                        <option>Na</option>
+                        <option>Ni</option>
+                        <option>O</option>
+                        <option>Si</option>
+                        <option>Sr</option>
+                        <option>Ti</option>
+                        <option>Y</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="m3d_nlte_iter">NLTE iterations:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="m3d_vmic">vmic:</label>
-                <input type="number" class="form-control" id="m3d_vmic" name="m3d_vmic"  value="1.00">
+            <div class="row form-group">
+                <div class="col-md-6">
+                    <label for="m3d_xfeabundances">Change abundance: ELEMENT_NUMBER/NAME [X/Fe] .<br> E.g. 12 1.0 or Mg 1.0</label>
+                </div>
+                <div class="col-md-6">
+                    <textarea class="form-control" id="m3d_xfeabundances" name="m3d_xfeabundances" rows="2"></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="m3d_lmin">minimum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label for="m3d_loggf_limit">loggf limit blends:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit" value="-100">
+                </div>
+                <div class="col-md-1">
+                    <label for="left_x_boundary">Left λ EW</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
+                </div>
+                <div class="col-md-1">
+                    <label for="right_x_boundary">Right λ EW</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-info" onclick="updateIntegrals()">Calculate EW</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="m3d_lmax">maximum wavelength:</label>
-                <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
-            </div>
-            <div class="form-group">
-                <label for="m3d_deltal">Delta wavelength:</label>
-                <input type="number" class="form-control" id="m3d_deltal" name="m3d_deltal"  value="0.01">
-            </div>
-            <div class="form-group">
-                <label for="m3d_vmac">Macroturbulence:</label>
-                <input type="number" class="form-control" id="m3d_vmac" name="m3d_vmac"  value="0">
-            </div>
-            <div class="form-group">
-                <label for="m3d_rotation">Rotation:</label>
-                <input type="number" class="form-control" id="m3d_rotation" name="m3d_rotation"  value="0">
-            </div>
-            <div class="form-group">
-                <label for="m3d_resolution">Resolution:</label>
-                <input type="number" class="form-control" id="m3d_resolution" name="m3d_resolution"  value="0">
-            </div>
-            <div class="form-group">
-                <label for="m3d_nlte_element">NLTE element:</label>
-                <select class="form-control" id="m3d_nlte_element" name="m3d_nlte_element"  value="none">
-                    <option>none</option>
-                    <option>Al</option>
-                    <option>Ba</option>
-                    <option>Ca</option>
-                    <option>Co</option>
-                    <option>Eu</option>
-                    <option>Fe</option>
-                    <option>H</option>
-                    <option>Mg</option>
-                    <option>Mn</option>
-                    <option>Na</option>
-                    <option>Ni</option>
-                    <option>O</option>
-                    <option>Si</option>
-                    <option>Sr</option>
-                    <option>Ti</option>
-                    <option>Y</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="m3d_nlte_iter">NLTE iterations:</label>
-                <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
-            </div>
-            <div class="form-group">
-                <label for="m3d_xfeabundances">Change abundance in the format: ELEMENT_NUMBER [X/Fe] . E.g. 12 1.0</label>
-                <textarea class="form-control" id="m3d_xfeabundances" name="m3d_xfeabundances" rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="m3d_loggf_limit">loggf limit buttons:</label>
-                <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit"  value="-5.0">
-            </div>
-            <button class="btn btn-info" onclick="loadPlot2()">Load Plot</button>
-            <div class="form-group">
-                <label for="left_x_boundary">Left x boundary EW calculation:</label>
-                <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
-            </div>
-            <div class="form-group">
-                <label for="right_x_boundary">Right x boundary EW calculation:</label>
-                <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
-            </div>
-            <button class="btn btn-info" onclick="updateIntegrals()">Calculate integrals</button>
+            <button class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
             <div id="integral_synthetic"></div>
             <div id="integral_observed"></div>
             <div id="columns"></div>
