@@ -217,6 +217,39 @@
                         width: 2
                     }
                 }
+                ],
+                annotations: [{
+                    x: requestData.left_x_boundary,
+                    y: 1.10,
+                    xref: 'x',
+                    yref: 'paper',
+                    text: requestData.left_x_boundary,
+                    showarrow: false,
+                    arrowhead: 7,
+                    font: {
+                        size: 12,
+                        color: 'black'
+                    },
+                    // center the text
+                    xanchor: 'middle',
+                    yanchor: 'middle'
+                },
+                {
+                    x: requestData.right_x_boundary,
+                    y: 1.10,
+                    xref: 'x',
+                    yref: 'paper',
+                    text: requestData.right_x_boundary,
+                    showarrow: false,
+                    arrowhead: 7,
+                    font: {
+                        size: 12,
+                        color: 'black'
+                    },
+                    // center the text
+                    xanchor: 'middle',
+                    yanchor: 'middle'
+                }
                 ]
             };
             Plotly.relayout('plot-container', update);
