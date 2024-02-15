@@ -204,7 +204,8 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
                                                       nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
                                                       nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
                                                       verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
-                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit)
+                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit,
+                                                      plot_output=False)
     return list(wavelength), list(norm_flux), parsed_linelist_info
 
 
