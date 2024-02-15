@@ -40,6 +40,10 @@
         .flex-item input {
             width: 100%; /* Makes input take the full width of its container */
         }
+
+        .blue { background-color: #007bff; }
+        .green { background-color: #28a745; }
+        .red { background-color: #dc3545; }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -61,6 +65,8 @@
     </script>
     <script>
     function loadPlot2() {
+    displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
+
     let currentShapeIndex = null; // Track the current shape index
 
     const requestData = {
@@ -169,12 +175,25 @@
 
             // Reconstruct the plot using the received data and layout
             Plotly.newPlot('plot-container', data.data, data.layout);
-
+            displayNotification("Success!", 3000, "green");
         },
         error: function(jqxhr, textStatus, error) {
             console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+            displayNotification("Error occurred!", 3000, "red");
         }
     });
+    }
+
+
+    function displayNotification(message, duration, color) {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.style.display = "block";
+        console.log(color)
+        notification.style.backgroundColor = color; // Change button color based on the argument
+        setTimeout(function() {
+            notification.style.display = "none";
+        }, duration);
     }
 
     function updateIntegrals() {
@@ -272,8 +291,7 @@
         }
     });
 }
-
-    </script>
+</script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -305,7 +323,7 @@
             </ul>
         </div>
     </nav>
-
+    <div id="notification" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #f44336; color: white; padding: 16px; border-radius: 8px;">Notification</div>
     <!-- Jumbotron -->
     <div class="container">
         <div class="jumbotron">

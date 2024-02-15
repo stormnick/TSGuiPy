@@ -609,5 +609,5 @@ def plot_fitted_result_one_star():
 
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
     #generate_synthetic_spectrum()
