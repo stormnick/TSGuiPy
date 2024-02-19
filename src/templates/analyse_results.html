@@ -136,11 +136,11 @@
             checkbox.addEventListener('change', () => updateMeanValue(figures));
 
             Plotly.newPlot(plotContainer, JSON.parse(figData.figure));
-            plotsGrid.appendChild(checkbox);
             plotsGrid.appendChild(columnsContainer);
+            plotsGrid.appendChild(checkbox);
             plotsGrid.appendChild(plotContainer);
 
-            //columnsContainer.innerHTML = '';
+            columnsContainer.innerHTML = '';
             figData.columns.forEach(column => {
                 const button = document.createElement('button');
                 // make button at least 10 px high and 100 px wide
