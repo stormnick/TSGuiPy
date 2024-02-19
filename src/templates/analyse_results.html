@@ -125,8 +125,10 @@
         const plotsGrid = document.getElementById('plotsGrid');
         plotsGrid.innerHTML = ''; // Clear existing content
         figures.forEach((figData, index) => {
+            let currentShapeIndex = null;
             const plotContainer = document.createElement('div');
             const checkbox = document.createElement('input');
+            const columnsContainer = document.createElement('div');
             checkbox.type = 'checkbox';
             checkbox.id = 'checkbox' + index;
             checkbox.setAttribute('data-value', figData.value);
@@ -134,8 +136,79 @@
             checkbox.addEventListener('change', () => updateMeanValue(figures));
 
             Plotly.newPlot(plotContainer, JSON.parse(figData.figure));
-            plotsGrid.appendChild(plotContainer);
             plotsGrid.appendChild(checkbox);
+            plotsGrid.appendChild(columnsContainer);
+            plotsGrid.appendChild(plotContainer);
+
+            //columnsContainer.innerHTML = '';
+            figData.columns.forEach(column => {
+                const button = document.createElement('button');
+                // make button at least 10 px high and 100 px wide
+                button.style.height = '20px';
+                button.style.width = '120px';
+                button.textContent = column.name;
+                // text inside the button is the column name
+                button.style.margin = '5px';
+                button.style.backgroundColor = 'lightgrey';
+                button.style.border = 'none';
+                button.style.borderRadius = '5px';
+                button.style.cursor = 'pointer';
+                button.style.color = 'black';
+                // font color is black
+                button.style.fontSize = '10px';
+                // font color is black
+                button.style.fontWeight = 'bold';
+                button.style.textAlign = 'center';
+                button.style.textDecoration = 'none';
+
+                button.onclick = function () {
+                    // First, remove the existing line if there is one
+                    if (currentShapeIndex !== null) {
+                        Plotly.relayout(plotContainer, {
+                            shapes: [], // Clear existing shapes
+                            annotations: []
+                        });
+                    }
+
+                    // Update the plot to include a vertical line at column's x_value
+                    const update = {
+                        shapes: [{
+                            type: 'line',
+                            x0: column.wavelength,
+                            y0: 0,
+                            x1: column.wavelength,
+                            y1: 1.01,
+                            xref: 'x',
+                            yref: 'paper',
+                            line: {
+                                color: 'orange',
+                                width: 2
+                            }
+                        }
+                            // write text which is the column name
+                        ],
+                        annotations: [{
+                            x: column.wavelength + 0.014,
+                            y: 1.05,
+                            xref: 'x',
+                            yref: 'paper',
+                            text: column.element,
+                            showarrow: false,
+                            arrowhead: 7,
+                            font: {
+                                size: 12,
+                                color: 'black'
+                            },
+                            // center the text
+                            xanchor: 'middle',
+                            yanchor: 'middle'
+                        }]
+                    };
+                    Plotly.relayout(plotContainer, update);
+                    currentShapeIndex = 0; // This works under the assumption you only have this one shape
+                };
+                columnsContainer.appendChild(button);
+            });
         });
 
         updateMeanValue(figures); // Call updateMeanValue initially to display the mean value

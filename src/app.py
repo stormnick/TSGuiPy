@@ -206,7 +206,14 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
                                                       verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
                                                       return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit,
                                                       plot_output=False)
-    return list(wavelength), list(norm_flux), parsed_linelist_info
+
+    parsed_linelist_dict = []
+    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
+    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
+    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
+
+    return list(wavelength), list(norm_flux), parsed_linelist_dict
 
 
 @app.route('/get_m3d_plot', methods=['POST'])
@@ -246,14 +253,9 @@ def get_plot_m3d():
                 element_name = element
             element_abundances[element_name] = float(abundance)
 
-    wavelength, flux, parsed_linelist_data = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+    wavelength, flux, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
                                                       nlte_iter, element_abundances, vmac, rotation, resolution,
                                                       loggf_limit=loggf_limit, linelist_path=linelist_path)
-    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
-    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
-    parsed_linelist_dict = []
-    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_data):
-        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]
@@ -589,9 +591,9 @@ def plot_fitted_result_one_star():
 
             linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting_cemp_goldstandard/"
 
-            wavelength_m3d, flux_m3d, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
+            wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
         else:
-            wavelength_m3d, flux_m3d = [], []
+            wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
 
 
         fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
@@ -603,7 +605,8 @@ def plot_fitted_result_one_star():
         fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_m3d, flux_m3d)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
-            "value": fitted_value
+            "value": fitted_value,
+            "columns": parsed_linelist_dict
         }
         figures.append(figure_data)
 
