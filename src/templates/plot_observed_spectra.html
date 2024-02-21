@@ -130,7 +130,7 @@
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         success: function(data) {
-            document.getElementById('integral_observed').innerText = "Observed EW: " + data.integral_observed;
+            document.getElementById('integral_observed').innerText = "Observed EW: " + data.integral_synthetic;
             // Update Plotly graph here
             // First, remove the existing line if there is one
             if (currentShapeIndexIntegrals !== null) {

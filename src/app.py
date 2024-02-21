@@ -307,13 +307,16 @@ def synthetic_calculate_integral():
         return jsonify({"integral_synthetic": 0, "integral_observed": 0})
 
     trace = plot_data[0]
-    trace_obs = plot_data[1]
+    if len(plot_data) > 1:
+        trace_obs = plot_data[1]
+        x_obs = np.asarray(trace_obs['x'])
+        y_obs = np.asarray(trace_obs['y'])
+    else:
+        x_obs, y_obs = np.array([]), np.array([])
 
     x_fitted = np.asarray(trace['x'])
     y_fitted = np.asarray(trace['y'])
 
-    x_obs = np.asarray(trace_obs['x'])
-    y_obs = np.asarray(trace_obs['y'])
 
     # find the indices of wavelength that are within lmin and lmax
     indices_fitted = np.where((x_fitted >= left_x_boundary) & (x_fitted <= right_x_boundary))
