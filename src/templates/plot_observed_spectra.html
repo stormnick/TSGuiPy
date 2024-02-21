@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spectra Fitting Application</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        .jumbotron {
+            background-color: #f2f2f2;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        .btn-custom {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            margin: 0.5rem;
+            border: none;
+            border-radius: 0.3rem;
+            cursor: pointer;
+        }
+        .container {
+            padding-top: 2rem;
+        }
+        .flex-container {
+            display: flex;
+            align-items: center; /* Aligns items vertically in the center */
+            justify-content: space-between; /* Adds space between the flex items */
+            margin-bottom: 10px; /* Adds some space between each form-group */
+        }
+
+        .flex-item {
+            flex: 1; /* Allows items to grow and fill the space */
+            margin-right: 5px; /* Adds some space between label and input */
+        }
+
+        .flex-item input {
+            width: 100%; /* Makes input take the full width of its container */
+        }
+
+        .blue { background-color: #007bff; }
+        .green { background-color: #28a745; }
+        .red { background-color: #dc3545; }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+    function plotObserved() {
+    displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
+
+    const requestData = {
+        obs_rv: document.getElementById("obs_rv").value
+    };
+
+    $.ajax({
+        url: 'plot_observed',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        success: function(data) {
+            // Clear the plot-container
+            const plotContainer = document.getElementById('plot-container');
+            plotContainer.innerHTML = '';
+
+            // Reconstruct the plot using the received data and layout
+            Plotly.newPlot('plot-container', data.data, data.layout);
+            displayNotification("Success!", 3000, "green");
+        },
+        error: function(jqxhr, textStatus, error) {
+            console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+            displayNotification("Error occurred!", 3000, "red");
+        }
+    });
+    }
+
+    $(document).ready(function() {
+    $('#uploadForm').on('submit', function(e) {
+        console.log('Uploading spectra...');
+        e.preventDefault(); // Stop form from submitting normally
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: '/upload_spectra',
+            type: 'POST',
+            data: formData,
+            processData: false, // Tell jQuery not to process the data
+            contentType: false, // Tell jQuery not to set contentType
+            success: function(response) {
+                console.log('Upload successful');
+                // Handle success
+                alert('Upload successful!');
+            },
+            error: function(xhr, status, error) {
+                console.log('Upload error');
+                // Handle error
+                alert('Upload failed!');
+            }
+        });
+    });
+    });
+
+
+
+    function displayNotification(message, duration, color) {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.style.display = "block";
+        console.log(color)
+        notification.style.backgroundColor = color; // Change button color based on the argument
+        setTimeout(function() {
+            notification.style.display = "none";
+        }, duration);
+    }
+
+    function updateIntegrals() {
+    let currentShapeIndexIntegrals = null; // Track the current shape index
+    const requestData = {
+        left_x_boundary: document.getElementById('left_x_boundary').value,
+        right_x_boundary: document.getElementById('right_x_boundary').value,
+        plot_data: document.getElementById('plot-container').data
+    };
+
+    $.ajax({
+        url: '/synthetic_calculate_integral',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        success: function(data) {
+            document.getElementById('integral_observed').innerText = "Observed EW: " + data.integral_observed;
+            // Update Plotly graph here
+            // First, remove the existing line if there is one
+            if (currentShapeIndexIntegrals !== null) {
+                Plotly.relayout('plot-container', {
+                    shapes: [], // Clear existing shapes
+                    annotations: []
+                });
+            }
+            // Update the plot to include a vertical line at column's x_value
+            const update = {
+                shapes: [{
+                    type: 'line',
+                    x0: requestData.left_x_boundary,
+                    y0: 0,
+                    x1: requestData.left_x_boundary,
+                    y1: 1.05,
+                    xref: 'x',
+                    yref: 'paper',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                },
+                {
+                    type: 'line',
+                    x0: requestData.right_x_boundary,
+                    y0: 0,
+                    x1: requestData.right_x_boundary,
+                    y1: 1.05,
+                    xref: 'x',
+                    yref: 'paper',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                }
+                ],
+                annotations: [{
+                    x: requestData.left_x_boundary,
+                    y: 1.10,
+                    xref: 'x',
+                    yref: 'paper',
+                    text: requestData.left_x_boundary,
+                    showarrow: false,
+                    arrowhead: 7,
+                    font: {
+                        size: 12,
+                        color: 'black'
+                    },
+                    // center the text
+                    xanchor: 'middle',
+                    yanchor: 'middle'
+                },
+                {
+                    x: requestData.right_x_boundary,
+                    y: 1.10,
+                    xref: 'x',
+                    yref: 'paper',
+                    text: requestData.right_x_boundary,
+                    showarrow: false,
+                    arrowhead: 7,
+                    font: {
+                        size: 12,
+                        color: 'black'
+                    },
+                    // center the text
+                    xanchor: 'middle',
+                    yanchor: 'middle'
+                }
+                ]
+            };
+            Plotly.relayout('plot-container', update);
+            currentShapeIndexIntegrals = 0; // This works under the assumption you only have this one shape
+    },
+        error: function(jqxhr, textStatus, error) {
+            console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+        }
+    });
+}
+</script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">TSGuiPy</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/config">Config Creator</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/monitor">Job Monitor</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/plot_results">Results Viewer</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/analyse_results">Analyse results</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Plot observed spectra</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div id="notification" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #f44336; color: white; padding: 16px; border-radius: 8px;">Notification</div>
+    <!-- Jumbotron -->
+    <div class="container">
+        <div class="jumbotron">
+            <h1 class="display-4"></h1>
+            <p class="lead">Generate synthetic spectra and overplot observed one.</p>
+            <hr class="my-4">
+            <div class="row form-group">
+                <div class="col-md-8">
+                    <form id="uploadForm" action="/upload_spectra" method="post" enctype="multipart/form-data">
+                        <div class="row"> <!-- Ensures elements are in a flex row -->
+                            <div class="col-8"> <!-- Adjust the size as needed -->
+                                <input type="file" name="file">
+                            </div>
+                            <div class="col-4"> <!-- Adjust the size as needed -->
+                                <input type="submit" value="Upload observed spectra" class="btn btn-primary">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-2">
+                    <label for="obs_rv">Observed RV</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="obs_rv" name="obs_rv" value="0.0">
+                </div>
+            </div>
+            <div class="row form-group">
+                <div class="col-md-1">
+                    <label for="left_x_boundary">Left λ EW</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
+                </div>
+                <div class="col-md-1">
+                    <label for="right_x_boundary">Right λ EW</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-info" onclick="updateIntegrals()">Calculate EW</button>
+                </div>
+            </div>
+            <button class="btn btn-custom" onclick="plotObserved()">Plot Spectra</button>
+            <div id="integral_observed"></div>
+            <div id="plot-container"></div>
+        </div>
+
+    </div>
+
+</body>
+</html>

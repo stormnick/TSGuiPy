@@ -166,6 +166,10 @@ def results():
 def generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
+@app.route('/plot_observed_spectra')
+def plot_observed_spectra_html():
+    return render_template('plot_observed_spectra.html')
+
 def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=-5.0):
     if linelist_path is None:
         linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
@@ -214,6 +218,19 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
         parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
 
     return list(wavelength), list(norm_flux), parsed_linelist_dict
+
+
+@app.route('/plot_observed', methods=['POST'])
+def plot_observed_spectra():
+    data = request.json
+    rv = float(data['obs_rv'])
+
+    wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
+
+    wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
+
+    fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed)
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
 @app.route('/get_m3d_plot', methods=['POST'])
@@ -400,7 +417,8 @@ def upload_spectra():
     #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
     # now route to analyse_results
-    return redirect(url_for('generate_synthetic_spectrum'))
+    #return redirect(url_for('generate_synthetic_spectrum'))
+    return jsonify({'message': 'Upload successful', 'status': 'success'})
 
 def process_file(folder_path, processed_dict):
     # linemask loading
