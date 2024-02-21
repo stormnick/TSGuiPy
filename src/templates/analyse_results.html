@@ -41,6 +41,72 @@
                 plot_fitted_result_one_star();
             });
         });
+
+
+        $(document).ready(function() {
+        $('#uploadForm').on('submit', function(e) {
+            displayNotification("Uploading...", 3000, "blue"); // Example: blue for processing
+            e.preventDefault(); // Stop form from submitting normally
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: formData,
+                processData: false, // Tell jQuery not to process the data
+                contentType: false, // Tell jQuery not to set contentType
+                success: function(response) {
+                    console.log('Upload successful');
+                    // Handle success
+                    displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
+                },
+                error: function(xhr, status, error) {
+                    console.log('Upload error');
+                    // Handle error
+                    displayNotification("Upload error :(", 3000, "red"); // Example: blue for processing
+                }
+            });
+        });
+        });
+
+        $(document).ready(function() {
+        $('#uploadForm_zip').on('submit', function(e) {
+            displayNotification("Uploading...", 3000, "blue"); // Example: blue for processing
+            e.preventDefault(); // Stop form from submitting normally
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/upload_zip',
+                type: 'POST',
+                data: formData,
+                processData: false, // Tell jQuery not to process the data
+                contentType: false, // Tell jQuery not to set contentType
+                success: function(response) {
+                    console.log('Upload successful');
+                    // Handle success
+                    displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
+                },
+                error: function(xhr, status, error) {
+                    console.log('Upload error');
+                    // Handle error
+                    displayNotification("Upload error :(", 3000, "red"); // Example: blue for processing
+                }
+            });
+        });
+        });
+
+
+        function displayNotification(message, duration, color) {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.style.display = "block";
+        console.log(color)
+        notification.style.backgroundColor = color; // Change button color based on the argument
+        setTimeout(function() {
+            notification.style.display = "none";
+        }, duration);
+    }
+
     </script>
 </head>
 <body>
@@ -76,7 +142,7 @@
             </ul>
         </div>
     </nav>
-
+    <div id="notification" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #f44336; color: white; padding: 16px; border-radius: 8px;">Notification</div>
     <!-- Jumbotron -->
     <div class="container">
         <div class="jumbotron">
@@ -84,6 +150,15 @@
             <p class="lead">Choose folder with the results. If too many files (>1000?) please zip the results folder and upload it instead</p>
             <hr class="my-4">
             <p>Change.</p>
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="folder" webkitdirectory directory multiple>
+                <input type="submit" value="Upload results folder">
+            </form>
+            <form id="uploadForm_zip" action="/upload_zip" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".zip">
+                <input type="submit" value="Upload .zip file with the results">
+            </form>
+
             <div class="form-group">
                 <input type="checkbox" class="form-check-input" id="overplotBlendsCheck" name="overplotBlendsCheck">
                 <label class="form-check-label" for="overplotBlendsCheck">Overplot blends</label>

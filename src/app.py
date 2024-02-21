@@ -347,9 +347,9 @@ def upload_zipped_file():
             file_path = os.path.join(temp_dir, filename)
             file.save(file_path)
             extract_and_process_zip(file_path)
-        return redirect(url_for('plot_results'))
+        return jsonify({'message': 'Upload successful', 'status': 'success'})
     else:
-        return redirect(url_for('plot_results'))
+        return jsonify({'message': 'Not zip', 'status': 'error'})
 
 def extract_and_process_zip(zip_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -395,7 +395,7 @@ def upload_folder():
     #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
     # now route to analyse_results
-    return redirect(url_for('plot_results'))
+    return jsonify({'message': 'Upload successful', 'status': 'success'})
 
 @app.route('/upload_spectra', methods=['POST'])
 def upload_spectra():
