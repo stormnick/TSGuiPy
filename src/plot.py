@@ -51,7 +51,7 @@ def plot_synthetic_data(x_fitted, y_fitted, lmin, lmax, wavelength_obs=None, flu
     return fig
 def plot_observed_spectra(x_fitted, y_fitted):
     # plot fitted as line
-    trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
+    trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='markers', marker=dict(color='black'), name='observed')
     fig = go.Figure(data=[trace])
     fig.update_layout(
         xaxis_title="Wavelength",

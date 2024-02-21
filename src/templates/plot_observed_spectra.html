@@ -81,7 +81,7 @@
 
     $(document).ready(function() {
     $('#uploadForm').on('submit', function(e) {
-        console.log('Uploading spectra...');
+        displayNotification("Uploading...", 3000, "blue"); // Example: blue for processing
         e.preventDefault(); // Stop form from submitting normally
         var formData = new FormData(this);
 
@@ -94,18 +94,16 @@
             success: function(response) {
                 console.log('Upload successful');
                 // Handle success
-                alert('Upload successful!');
+                displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
             },
             error: function(xhr, status, error) {
                 console.log('Upload error');
                 // Handle error
-                alert('Upload failed!');
+                displayNotification("Upload error :(", 3000, "red"); // Example: blue for processing
             }
         });
     });
     });
-
-
 
     function displayNotification(message, duration, color) {
         const notification = document.getElementById("notification");
