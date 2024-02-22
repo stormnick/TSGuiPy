@@ -529,6 +529,9 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename]['abundance_dict'] = fitlist_parameters[index_fitlist][8]
         data_results_storage['fitted_spectra'][filename]['resolution'] = fitlist_parameters[index_fitlist][9]
 
+        if data_results_storage['fitted_spectra'][filename]['resolution'] == 0:
+            data_results_storage['fitted_spectra'][filename]['resolution'] = processed_dict["resolution_constant"]
+
         # load all fitted values for each linemask
         data_results_storage['fitted_spectra'][filename]['fitted_rv'] = {}
         data_results_storage['fitted_spectra'][filename]['flag_error'] = {}
