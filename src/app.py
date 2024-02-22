@@ -10,7 +10,7 @@ import numpy as np
 import plotly
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from TSGuiPy.src import plot
-from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data
+from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data, plot_synthetic_data
 from scripts.loading_configs import TSFitPyConfig
 from scripts.auxiliary_functions import apply_doppler_correction, calculate_equivalent_width
 from scripts.solar_abundances import periodic_table
@@ -218,6 +218,32 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
         parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
 
     return list(wavelength), list(norm_flux), parsed_linelist_dict
+def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None):
+    if linelist_path is None:
+        linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
+    ts_paths = {"turbospec_path": "/Users/storm/docker_common_folder/TSFitPy/turbospectrum/exec/",  # change to /exec-gf/ if gnu compiler
+                       "interpol_path": "/Users/storm/docker_common_folder/TSFitPy/scripts/model_interpolators/",
+                       "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
+                       "departure_file_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/",
+                       "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/",
+                       "line_list_path": linelist_path}  # change to path to 3D atmosphere if running 3D model atmosphere
+
+    atmosphere_type = "1D"  # "1D" or "3D"
+    if nlte_element != "none":
+        element_in_nlte = nlte_element
+        nlte_flag = True
+    else:
+        element_in_nlte = ""
+        nlte_flag = False
+    element_abundances = xfeabundances
+    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
+
+    wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                      atmosphere_type, nlte_flag, element_in_nlte, element_abundances, True,
+                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
+
+    parsed_linelist_dict = []
+    return list(wavelength), list(norm_flux), parsed_linelist_dict
 
 
 @app.route('/plot_observed', methods=['POST'])
@@ -252,6 +278,7 @@ def get_plot_m3d():
     obs_rv = float(data['obs_rv'])
     loggf_limit = float(data['loggf_limit'])
     linelist_path = data['linelist_path']
+    code_type = data['code_type']
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -267,12 +294,17 @@ def get_plot_m3d():
                 element_name = periodic_table[element]
             except ValueError:
                 # if it fails, it is a string
-                element_name = element
+                element_name = element.lower().capitalize()
             element_abundances[element_name] = float(abundance)
 
-    wavelength, flux, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
-                                                      nlte_iter, element_abundances, vmac, rotation, resolution,
-                                                      loggf_limit=loggf_limit, linelist_path=linelist_path)
+    if code_type.lower() == 'm3d':
+        wavelength, flux, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+                                                          nlte_iter, element_abundances, vmac, rotation, resolution,
+                                                          loggf_limit=loggf_limit, linelist_path=linelist_path)
+    elif code_type.lower() == 'ts':
+        wavelength, flux, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+                                                          element_abundances, vmac, rotation, resolution,
+                                                          loggf_limit=loggf_limit, linelist_path=linelist_path)
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]
