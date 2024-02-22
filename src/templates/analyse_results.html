@@ -158,12 +158,22 @@
                 <input type="file" name="file" accept=".zip">
                 <input type="submit" value="Upload .zip file with the results">
             </form>
-
-            <div class="form-group">
-                <input type="checkbox" class="form-check-input" id="overplotBlendsCheck" name="overplotBlendsCheck">
-                <label class="form-check-label" for="overplotBlendsCheck">Overplot blends</label>
+            <hr class="my-4">
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label for="overplotBlendsCheck">Overplot blends:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="overplotBlendsCheck" name="overplotBlendsCheck">
+                </div>
+                <div class="col-md-2">
+                    <label for="m3d_linelist">Linelist path</label>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="m3d_linelist" name="m3d_linelist" value="../../input_files/linelists/linelist_for_fitting/">
+                </div>
             </div>
-
+            <hr class="my-4">
             <form id="specnameChoiceForm" method="post">
                 <select id="specname">
                     {% for option in options %}
@@ -188,6 +198,7 @@
             specname: document.getElementById("specname").value,
             overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked
         };
+        displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots
         $.ajax({
             url: '/plot_fitted_result_one_star',
@@ -195,7 +206,11 @@
             contentType: 'application/json',
             data: JSON.stringify(requestData),
             success: function(response) {
+                displayNotification("Success!", 3000, "green"); // Example: blue for processing
                 displayFigures(response.figures);
+            },
+            error: function(xhr, status, error) {
+                displayNotification("Error :(", 3000, "red"); // Example: blue for processing
             }
         });
     };
