@@ -196,7 +196,8 @@
     function plot_fitted_result_one_star() {
         const requestData = {
             specname: document.getElementById("specname").value,
-            overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked
+            overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked,
+            linelistPath: document.getElementById("m3d_linelist").value
         };
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots

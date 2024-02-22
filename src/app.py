@@ -616,6 +616,7 @@ def plot_fitted_result_one_star():
     data = request.json
     specname = data['specname']
     overplot_synthetic_data = data['overplotBlendsCheck']
+    linelist_path = data['linelistPath']
     #print(specname)
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
@@ -645,7 +646,7 @@ def plot_fitted_result_one_star():
             xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
             xfeabundances[data_results_storage["fitted_element"]] = -40
 
-            linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting_cemp_goldstandard/"
+            linelist_path = linelist_path
 
             wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
         else:
