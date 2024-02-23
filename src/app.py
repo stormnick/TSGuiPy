@@ -19,7 +19,8 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
-data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {}}
+data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {},
+                        "observed_spectra_synthetic": {}}
 
 
 def local_run():
@@ -250,12 +251,23 @@ def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundanc
 def plot_observed_spectra():
     data = request.json
     rv = float(data['obs_rv'])
+    rv_synthetic = float(data['synthetic_rv'])
 
     wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
 
+    flux_synthetic = [], []
+    wavelength_synthetic_rv_corrected = []
+
+    if data_results_storage['observed_spectra_synthetic']:
+        wavelength_synthetic, flux_synthetic = data_results_storage['observed_spectra_synthetic']["wavelength"], data_results_storage['observed_spectra_synthetic']["flux"]
+        if np.size(wavelength_synthetic) > 0:
+            wavelength_synthetic_rv_corrected = apply_doppler_correction(wavelength_synthetic, rv_synthetic)
+
     wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
 
-    fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed)
+
+
+    fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed, wavelength_synthetic_rv_corrected, flux_synthetic)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
@@ -445,6 +457,32 @@ def upload_spectra():
         wavelength_observed, flux_observed = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
         data_results_storage['observed_spectra']["wavelength"] = wavelength_observed
         data_results_storage['observed_spectra']["flux"] = flux_observed
+        #parsed_config_dict = load_output_data(temp_dir)
+        #data_results_storage["parsed_config_dict"] = parsed_config_dict
+        #process_file(temp_dir, data_results_storage["parsed_config_dict"])
+        #data_results_storage["options"] = data_results_storage["parsed_config_dict"]["specname_fitlist"]
+    #options = data_results_storage["options"]
+    # Optionally, clean up by deleting the temporary files
+    # now route to analyse_results
+    #return redirect(url_for('generate_synthetic_spectrum'))
+    return jsonify({'message': 'Upload successful', 'status': 'success'})
+
+@app.route('/upload_spectra_synthetic', methods=['POST'])
+def upload_spectra_synthetic():
+    # Get the uploaded files
+    file = request.files['file']
+    print(file)
+    # Temporary directory to save uploaded files
+    # create temp dir
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if "/" in file.filename:
+            filepath = os.path.join(temp_dir, file.filename.split("/")[1])
+        else:
+            filepath = os.path.join(temp_dir, file.filename)
+        file.save(filepath)
+        wavelength_observed, flux_observed = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
+        data_results_storage['observed_spectra_synthetic']["wavelength"] = wavelength_observed
+        data_results_storage['observed_spectra_synthetic']["flux"] = flux_observed
         #parsed_config_dict = load_output_data(temp_dir)
         #data_results_storage["parsed_config_dict"] = parsed_config_dict
         #process_file(temp_dir, data_results_storage["parsed_config_dict"])

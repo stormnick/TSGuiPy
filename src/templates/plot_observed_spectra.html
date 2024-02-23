@@ -55,7 +55,8 @@
     displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
 
     const requestData = {
-        obs_rv: document.getElementById("obs_rv").value
+        obs_rv: document.getElementById("obs_rv").value,
+        synthetic_rv: document.getElementById("synthetic_rv").value
     };
 
     $.ajax({
@@ -105,6 +106,32 @@
     });
     });
 
+    $(document).ready(function() {
+    $('#uploadFormSynthetic').on('submit', function(e) {
+        displayNotification("Uploading...", 3000, "blue"); // Example: blue for processing
+        e.preventDefault(); // Stop form from submitting normally
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: '/upload_spectra_synthetic',
+            type: 'POST',
+            data: formData,
+            processData: false, // Tell jQuery not to process the data
+            contentType: false, // Tell jQuery not to set contentType
+            success: function(response) {
+                console.log('Upload successful');
+                // Handle success
+                displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
+            },
+            error: function(xhr, status, error) {
+                console.log('Upload error');
+                // Handle error
+                displayNotification("Upload error :(", 3000, "red"); // Example: blue for processing
+            }
+        });
+    });
+    });
+
     function displayNotification(message, duration, color) {
         const notification = document.getElementById("notification");
         notification.textContent = message;
@@ -131,6 +158,7 @@
         data: JSON.stringify(requestData),
         success: function(data) {
             document.getElementById('integral_observed').innerText = "Observed EW: " + data.integral_synthetic;
+            document.getElementById('integral_synthetic').innerText = "Observed EW: " + data.integral_observed;
             // Update Plotly graph here
             // First, remove the existing line if there is one
             if (currentShapeIndexIntegrals !== null) {
@@ -273,6 +301,26 @@
                 </div>
             </div>
             <div class="row form-group">
+                <div class="col-md-8">
+                    <form id="uploadFormSynthetic" action="/upload_spectra_synthetic" method="post" enctype="multipart/form-data">
+                        <div class="row"> <!-- Ensures elements are in a flex row -->
+                            <div class="col-8"> <!-- Adjust the size as needed -->
+                                <input type="file" name="file">
+                            </div>
+                            <div class="col-4"> <!-- Adjust the size as needed -->
+                                <input type="submit" value="Upload synthetic spectra" class="btn btn-primary" style="background-color: mediumvioletred">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-2">
+                    <label for="synthetic_rv">Synthetic RV</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="synthetic_rv" name="synthetic_rv" value="0.0">
+                </div>
+            </div>
+            <div class="row form-group">
                 <div class="col-md-1">
                     <label for="left_x_boundary">Left λ EW</label>
                 </div>
@@ -291,6 +339,7 @@
             </div>
             <button class="btn btn-custom" onclick="plotObserved()">Plot Spectra</button>
             <div id="integral_observed"></div>
+            <div id="integral_synthetic"></div>
             <div id="plot-container"></div>
         </div>
 

@@ -49,11 +49,16 @@ def plot_synthetic_data(x_fitted, y_fitted, lmin, lmax, wavelength_obs=None, flu
         yaxis_title="Normalised Flux"
     )
     return fig
-def plot_observed_spectra(x_fitted, y_fitted):
+def plot_observed_spectra(x_fitted, y_fitted, x_lines=None, y_lines=None):
     # plot fitted as line
     trace = go.Scattergl(x=list(x_fitted), y=list(y_fitted), mode='markers', marker=dict(color='black', size=3), name='observed')
+    if x_lines is not None:
+        # plot observed data as a scatter plot
+        trace_lines = go.Scattergl(x=list(x_lines), y=list(y_lines), mode='lines', marker=dict(color='red'), name='synthetic')
+    else:
+        trace_lines = go.Scattergl(x=[], y=[], mode='lines', marker=dict(color='red'), name='synthetic')
     ylimit = [0, 1.10]
-    fig = go.Figure(data=[trace], layout_yaxis_range=ylimit)
+    fig = go.Figure(data=[trace_lines, trace], layout_yaxis_range=ylimit)
 
     fig.update_layout(
         xaxis_title="Wavelength",
