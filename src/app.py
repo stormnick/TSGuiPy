@@ -231,10 +231,10 @@ def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundanc
 
     atmosphere_type = "1D"  # "1D" or "3D"
     if nlte_element != "none":
-        element_in_nlte = nlte_element
+        element_in_nlte = [nlte_element]
         nlte_flag = True
     else:
-        element_in_nlte = ""
+        element_in_nlte = [""]
         nlte_flag = False
     element_abundances = xfeabundances
     # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
