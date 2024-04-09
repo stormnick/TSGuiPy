@@ -183,8 +183,8 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
 
     atmosphere_type = "1D"  # "1D" or "3D"
     hash_table_size = 100
-    n_nu = 1
-    mpi_cores = 1
+    n_nu = 16
+    mpi_cores = 8
     # if 3D atmosphere is used, then the following is needed
     dims = 23  # dimensions of the atmosphere
     atmos_format = 'Multi'  # MUST, Stagger or Multi
@@ -194,7 +194,7 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
     snap = 1  # snapshot number, only if Stagger
     # nlte settings, if nlte_flag = False, these are not used
     nlte_iterations_max = nlte_iter
-    nlte_convergence_limit = 0.01
+    nlte_convergence_limit = 0.00001
     if nlte_element != "none":
         element_in_nlte = nlte_element
         nlte_flag = True
@@ -543,9 +543,12 @@ def process_file(folder_path, processed_dict):
     for (filename, spectra_rv) in zip(data_results_storage["parsed_config_dict"]["specname_fitlist"], data_results_storage["parsed_config_dict"]["rv_fitlist"]):
         data_results_storage['fitted_spectra'][filename] = {}
         # fitted spectra
-        wavelength, flux = np.loadtxt(os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec"), unpack=True, usecols=(0,1), dtype=float)
+        try:
+            wavelength, flux = np.loadtxt(os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec"), unpack=True, usecols=(0,1), dtype=float)
+            wavelength, flux = zip(*sorted(zip(wavelength, flux)))
+        except FileNotFoundError:
+            wavelength, flux = [], []
         # argsort wavelength
-        wavelength, flux = zip(*sorted(zip(wavelength, flux)))
         wavelength, flux = np.asarray(wavelength), np.asarray(flux)
         data_results_storage['fitted_spectra'][filename]["wavelength_fitted"] = wavelength
         data_results_storage['fitted_spectra'][filename]["flux_fitted"] = flux
