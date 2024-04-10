@@ -162,6 +162,9 @@ def import_module_from_path(module_name, file_path):
 def results():
     return render_template('index.html')
 
+@app.route('/abundance_diagram')
+def abundance_diagram():
+    return render_template('analyse_abundance_diagram.html')
 
 @app.route('/generate_synthetic_spectrum')
 def generate_synthetic_spectrum():
@@ -268,6 +271,51 @@ def plot_observed_spectra():
 
 
     fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed, wavelength_synthetic_rv_corrected, flux_synthetic)
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+
+@app.route('/plot_abundance_diagram', methods=['POST'])
+def plot_abundance_diagram():
+    data = request.json
+    remove_errors = data['removeErrorsBool']
+    remove_warnings = data['removeWarningsBool']
+    chisqr_limit = float(data['chisqrLimit'])
+
+    specnames = data_results_storage['fitted_spectra'].keys()
+
+    # get the data from the fitted spectra
+    x_values = []
+    y_values = []
+
+    # so we want to get average of the fitted value for each specname, within the chisqr_limit and without errors and warnings
+    for specname in specnames:
+        # get the indices of the values that are within the chisqr_limit, and without errors and warnings
+        #indices = np.where((data_results_storage['fitted_spectra'][specname]['chi_squared'] <= chisqr_limit) & (data_results_storage['fitted_spectra'][specname]['flag_error'] == 0) & (data_results_storage['fitted_spectra'][specname]['flag_warning'] == 0))
+        # only do above if remove_errors and remove_warnings are True
+        chi_sqr_values = np.asarray(list(data_results_storage['fitted_spectra'][specname]['chi_squared'].values()))
+        flag_error_values = np.asarray(list(data_results_storage['fitted_spectra'][specname]['flag_error'].values()))
+        flag_warning_values = np.asarray(list(data_results_storage['fitted_spectra'][specname]['flag_warning'].values()))
+        if remove_errors and remove_warnings:
+            indices = np.where((chi_sqr_values <= chisqr_limit) & (flag_error_values == 0) & (flag_warning_values == 0))[0]
+        elif remove_errors:
+            indices = np.where((chi_sqr_values <= chisqr_limit) & (flag_error_values == 0))[0]
+        elif remove_warnings:
+            indices = np.where((chi_sqr_values <= chisqr_limit) & (flag_warning_values == 0))[0]
+        else:
+            indices = np.where(chi_sqr_values <= chisqr_limit)[0]
+
+        if np.size(indices) > 0:
+            x_value_temp = []
+            y_value_temp = []
+            for index in indices:
+                x_value_temp.append(np.average(data_results_storage['fitted_spectra'][specname]['Fe_H'][index]))
+                y_value_temp.append(np.average(data_results_storage['fitted_spectra'][specname]['fitted_value'][index]))
+
+            x_values.append(np.average(x_value_temp))
+            y_values.append(np.average(y_value_temp))
+
+    fitted_element_name = data_results_storage['fitted_value_label']
+
+    fig = plot.plot_abundance_plot(x_values, y_values, "[Fe/H]", fitted_element_name, "Abundance Diagram")
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 

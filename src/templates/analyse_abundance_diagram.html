@@ -35,22 +35,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById("linemaskChoiceForm").addEventListener("submit", function(event) {
-                event.preventDefault(); // Prevents the default form submission action
-                plot_fitted_result();
-            });
-        });
-
-
-        function plot_fitted_result() {
+        function loadAbundancePlot() {
         const requestData = {
-            specname: document.getElementById("specname").value,
-            linemask: document.getElementById("linemask").value
+            removeErrorsBool: document.getElementById("removeErrorsCheck").checked,
+            removeWarningsBool: document.getElementById("removeWarningsCheck").checked,
+            chisqrLimit: document.getElementById("chisqrLimit").value
         };
 
         $.ajax({
-            url: '/plot_fitted_result',
+            url: '/plot_abundance_diagram',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(requestData),
@@ -155,13 +148,13 @@
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
                 <li class="nav-item active">
-                    <a class="nav-link" href="#">Results Viewer</a>
+                    <a class="nav-link" href="/plot_results">Results Viewer</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/analyse_results">Analyse results</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/abundance_diagram">Abundance diagram</a>
+                    <a class="nav-link" href="#">Abundance diagram</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
@@ -188,23 +181,30 @@
                 <input type="file" name="file" accept=".zip">
                 <input type="submit" value="Upload .zip file with the results">
             </form>
-
-            <form id="specnameChoiceForm" method="post">
-                <select id="specname">
-                    {% for option in options %}
-                    <option value="{{ option }}">{{ option }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-            <form id="linemaskChoiceForm" method="post">
-                <select id="linemask">
-                    {% for option in options_linemask %}
-                    <option value="{{ option }}">{{ option }}</option>
-                    {% endfor %}
-                </select>
-                <input class="btn btn-info" type="submit" value="Plot results">
-            </form>
-
+            <hr class="my-4">
+                <div class="row form-group">
+                    <div class="col-md-2">
+                        <label for="removeErrorsCheck">Remove errors:</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="checkbox" class="form-check-input" id="removeErrorsCheck" name="removeErrorsCheck">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="removeWarningsCheck">Remove warnings:</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="checkbox" class="form-check-input" id="removeWarningsCheck" name="removeWarningsCheck">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="chisqrLimit">Chi sqr limit</label>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="number" class="form-control" id="chisqrLimit" name="chisqrLimit" value="10">
+                    </div>
+                </div>
+            <div class="col-md-2">
+                <button class="btn btn-custom" onclick="loadAbundancePlot()">Load Plot</button>
+            </div>
             <div id="plot-container"></div>
         </div>
 

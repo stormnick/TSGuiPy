@@ -66,6 +66,15 @@ def plot_observed_spectra(x_fitted, y_fitted, x_lines=None, y_lines=None):
     )
     return fig
 
+def plot_abundance_plot(x_values, y_values, x_label, y_label, title):
+    trace = go.Scatter(x=x_values, y=y_values, mode='markers', marker=dict(color='black'), name='Fitted')
+    layout = go.Layout(title=title)
+    fig = go.Figure(data=[trace], layout=layout)
+    fig.update_layout(
+        xaxis_title=x_label,
+        yaxis_title=y_label
+    )
+    return fig
 
 def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title, wavelength_synthetic=[], flux_synthetic=[]):
     # plot fitted as line
