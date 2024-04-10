@@ -315,7 +315,7 @@ def plot_abundance_diagram():
 
     fitted_element_name = data_results_storage['fitted_value_label']
 
-    fig = plot.plot_abundance_plot(x_values, y_values, "[Fe/H]", fitted_element_name, "Abundance Diagram")
+    fig = plot.plot_abundance_plot(x_values, y_values, f"[Fe/H]", fitted_element_name, f"Abundance Diagram, stars: {len(x_values)}")
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
