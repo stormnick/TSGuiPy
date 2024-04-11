@@ -23,12 +23,28 @@
             border-radius: 0.3rem;
             cursor: pointer;
         }
-        .btn-custom:hover {
-            background-color: #45a049;
-        }
         .container {
             padding-top: 2rem;
         }
+        .flex-container {
+            display: flex;
+            align-items: center; /* Aligns items vertically in the center */
+            justify-content: space-between; /* Adds space between the flex items */
+            margin-bottom: 10px; /* Adds some space between each form-group */
+        }
+
+        .flex-item {
+            flex: 1; /* Allows items to grow and fill the space */
+            margin-right: 5px; /* Adds some space between label and input */
+        }
+
+        .flex-item input {
+            width: 100%; /* Makes input take the full width of its container */
+        }
+
+        .blue { background-color: #007bff; }
+        .green { background-color: #28a745; }
+        .red { background-color: #dc3545; }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -41,7 +57,7 @@
             removeWarningsBool: document.getElementById("removeWarningsCheck").checked,
             chisqrLimit: document.getElementById("chisqrLimit").value
         };
-
+        displayNotification("Loading plot...", 3000, "blue"); // Example: blue for processing
         $.ajax({
             url: '/plot_abundance_diagram',
             type: 'POST',
@@ -56,9 +72,11 @@
 
                 // Reconstruct the plot using the received data and layout
                 Plotly.newPlot('plot-container', data.data, data.layout);
+                displayNotification("Plot loaded", 3000, "green"); // Example: green for success
             },
             error: function(jqxhr, textStatus, error) {
                 console.error("Request Failed: " + textStatus + ", " + error); // Log any errors to the console
+                displayNotification("Error loading plot", 3000, "red"); // Example: red for error
             }
         });
         }
@@ -147,13 +165,13 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
-                <li class="nav-item active">
+                <li class="nav-item">
                     <a class="nav-link" href="/plot_results">Results Viewer</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/analyse_results">Analyse results</a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item active">
                     <a class="nav-link" href="#">Abundance diagram</a>
                 </li>
                 <li class="nav-item">
@@ -187,7 +205,7 @@
                         <label for="removeErrorsCheck">Remove errors:</label>
                     </div>
                     <div class="col-md-2">
-                        <input type="checkbox" class="form-check-input" id="removeErrorsCheck" name="removeErrorsCheck">
+                        <input type="checkbox" class="form-check-input" id="removeErrorsCheck" name="removeErrorsCheck" checked>
                     </div>
                     <div class="col-md-2">
                         <label for="removeWarningsCheck">Remove warnings:</label>
@@ -198,7 +216,7 @@
                     <div class="col-md-2">
                         <label for="chisqrLimit">Chi sqr limit</label>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-2">
                         <input type="number" class="form-control" id="chisqrLimit" name="chisqrLimit" value="10">
                     </div>
                 </div>
