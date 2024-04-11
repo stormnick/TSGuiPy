@@ -127,11 +127,8 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/plot_results">Results Viewer</a>
-                </li>
                 <li class="nav-item active">
-                    <a class="nav-link" href="#">Analyse results</a>
+                    <a class="nav-link" href="#">View spectral fits</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/abundance_diagram">Abundance diagram</a>
@@ -140,7 +137,7 @@
                     <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/plot_observed_spectra">Plot observed spectra</a>
+                    <a class="nav-link" href="/plot_observed_spectrum">Plot observed spectra</a>
                 </li>
             </ul>
         </div>
@@ -205,7 +202,7 @@
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots
         $.ajax({
-            url: '/plot_fitted_result_one_star',
+            url: '/get_plot_fitted_spectra_one_star',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(requestData),

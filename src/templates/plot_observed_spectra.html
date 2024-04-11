@@ -60,7 +60,7 @@
     };
 
     $.ajax({
-        url: 'plot_observed',
+        url: 'get_plot_observed_spectrum',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
@@ -87,7 +87,7 @@
         var formData = new FormData(this);
 
         $.ajax({
-            url: '/upload_spectra',
+            url: '/upload_observed_spectra',
             type: 'POST',
             data: formData,
             processData: false, // Tell jQuery not to process the data
@@ -113,7 +113,7 @@
         var formData = new FormData(this);
 
         $.ajax({
-            url: '/upload_spectra_synthetic',
+            url: '/upload_synthetic_spectra',
             type: 'POST',
             data: formData,
             processData: false, // Tell jQuery not to process the data
@@ -259,10 +259,7 @@
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/plot_results">Results Viewer</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/analyse_results">Analyse results</a>
+                    <a class="nav-link" href="/spectral_fits_viewer">View spectral fits</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/abundance_diagram">Abundance diagram</a>
@@ -285,7 +282,7 @@
             <hr class="my-4">
             <div class="row form-group">
                 <div class="col-md-8">
-                    <form id="uploadForm" action="/upload_spectra" method="post" enctype="multipart/form-data">
+                    <form id="uploadForm" action="/upload_observed_spectra" method="post" enctype="multipart/form-data">
                         <div class="row"> <!-- Ensures elements are in a flex row -->
                             <div class="col-8"> <!-- Adjust the size as needed -->
                                 <input type="file" name="file">
@@ -305,7 +302,7 @@
             </div>
             <div class="row form-group">
                 <div class="col-md-8">
-                    <form id="uploadFormSynthetic" action="/upload_spectra_synthetic" method="post" enctype="multipart/form-data">
+                    <form id="uploadFormSynthetic" action="/upload_synthetic_spectra" method="post" enctype="multipart/form-data">
                         <div class="row"> <!-- Ensures elements are in a flex row -->
                             <div class="col-8"> <!-- Adjust the size as needed -->
                                 <input type="file" name="file">

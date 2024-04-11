@@ -1,21 +1,20 @@
+from __future__ import annotations
+
 import sys
 import os
 
+# This is a workaround to add the parent directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',)))
 
 import configparser
-import importlib
 import json
-import sys
 import tempfile
 import zipfile
-
 import numpy as np
 import plotly
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data, plot_synthetic_data
-from scripts.loading_configs import TSFitPyConfig
 from scripts.auxiliary_functions import apply_doppler_correction, calculate_equivalent_width
 from scripts.solar_abundances import periodic_table
 
@@ -26,47 +25,25 @@ DEFAULT_CONFIG_PATH = 'default_config.cfg'
 data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {},
                         "observed_spectra_synthetic": {}}
 
+CONFIG_WITH_DEFAULT_PATHS = "default_paths.cfg"
+default_paths = configparser.ConfigParser()
+default_paths.read(CONFIG_WITH_DEFAULT_PATHS)
+default_paths = default_paths["PathsToTheCodes"]
 
-def local_run():
-    print("local")
-
-
-def cluster_run():
-    print("cluster")
-
+"""
+HOME PAGE
+"""
 
 @app.route('/')
-def index():
+def render_html_main_page():
     return render_template('home_page.html')
 
-
-@app.route('/run_python', methods=['GET', 'POST'])
-def run_python():
-    # Your Python code here
-    return "Python function executed!"
-
-
-@app.route('/run_python2', methods=['POST'])
-def run_python2():
-    data = request.json
-    run_location = data['run_location']
-
-    if run_location == 'local':
-        local_run()
-    elif run_location == 'cluster':
-        cluster_run()
-
-    return "Python script has been executed"
-
-
-@app.route('/get_plot')
-def get_plot():
-    fig = plot.create_plot()
-    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
-
+"""
+CONFIG CREATOR
+"""
 
 @app.route('/config', methods=['GET', 'POST'])
-def config():
+def render_html_config():
     config_path = request.form.get('configPath', DEFAULT_CONFIG_PATH)
     if request.method == 'POST':
         config_data = {}
@@ -143,141 +120,83 @@ def load_config(config_path):
             config_dict[new_key] = config[section][key]
     return config_dict
 
-def import_module_from_path(module_name, file_path):
-    """
-    Dynamically imports a module or package from a given file path.
+"""
+FITTED SPECTRA RESULTS VIEWER
+"""
 
-    Parameters:
-    module_name (str): The name to assign to the module.
-    file_path (str): The file path to the module or package.
+@app.route('/spectral_fits_viewer')
+def render_html_spectral_fits_viewer():
+    return render_template('spectral_fits_viewer.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
 
-    Returns:
-    module: The imported module.
-    """
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    if spec is None:
-        raise ImportError(f"Module spec not found for {file_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
 
-@app.route('/results')
-def results():
-    return render_template('index.html')
+@app.route('/get_plot_fitted_spectra_one_star', methods=['POST'])
+def get_plot_fitted_result_one_star():
+    #print("plot_fitted_result")
+    data = request.json
+    specname = data['specname']
+    overplot_synthetic_data = data['overplotBlendsCheck']
+    linelist_path = data['linelistPath']
+    #print(specname)
+    figures = []
+    for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
+        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
+        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_idx]
+        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_idx]
+        # load spectra
+        wavelength_fitted = data_results_storage['fitted_spectra'][specname]["wavelength_fitted"]
+        flux_fitted = data_results_storage['fitted_spectra'][specname]["flux_fitted"]
+        wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
+        flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
+        rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
+        # apply rv correction
+        rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
+        wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
+
+        if overplot_synthetic_data and (data_results_storage["fitting_method"] == "lbl" or data_results_storage["fitting_method"] == "vmic"):
+            teff, logg = data_results_storage['fitted_spectra'][specname]['teff'], data_results_storage['fitted_spectra'][specname]['logg']
+            feh = data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx]
+            vmic = data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx]
+            lmin, lmax = left_wavelengths - 0.5, right_wavelengths + 0.5
+            ldelta = 0.01
+            vmac = data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]
+            rotation = data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]
+            resolution = data_results_storage['fitted_spectra'][specname]['resolution']
+
+            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
+            xfeabundances[data_results_storage["fitted_element"]] = -40
+
+            linelist_path = linelist_path
+
+            wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
+        else:
+            wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
+
+
+        fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
+        title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, "
+                 f"chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
+                 f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
+                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, rot = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
+                 f"rv_fit = {rv_fitted:.2f}")
+        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_m3d, flux_m3d)
+        figure_data = {
+            "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
+            "value": fitted_value,
+            "columns": parsed_linelist_dict
+        }
+        figures.append(figure_data)
+
+    return jsonify(figures=figures)
+
+"""
+ABUNDANCE DIAGRAM
+"""
 
 @app.route('/abundance_diagram')
-def abundance_diagram():
+def render_html_abundance_diagram():
     return render_template('analyse_abundance_diagram.html')
 
-@app.route('/generate_synthetic_spectrum')
-def generate_synthetic_spectrum():
-    return render_template('generate_synthetic_spectrum.html')
-
-@app.route('/plot_observed_spectra')
-def plot_observed_spectra_html():
-    return render_template('plot_observed_spectra.html')
-
-def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=-5.0):
-    if linelist_path is None:
-        linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
-    m3dis_paths = {"m3dis_path": "/Users/storm/PycharmProjects/3d_nlte_stuff/m3dis_l/m3dis/experiments/Multi3D/",
-                   "nlte_config_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/nlte_filenames.cfg",
-                   "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
-                   "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/",
-                   "line_list_path": linelist_path,
-                   "3D_atmosphere_path": None}  # change to path to 3D atmosphere if running 3D model atmosphere
-
-    atmosphere_type = "1D"  # "1D" or "3D"
-    hash_table_size = 100
-    n_nu = 16
-    mpi_cores = 8
-    # if 3D atmosphere is used, then the following is needed
-    dims = 23  # dimensions of the atmosphere
-    atmos_format = 'Multi'  # MUST, Stagger or Multi
-    nx = 10  # only if Stagger
-    ny = 10  # only if Stagger
-    nz = 230  # only if Stagger
-    snap = 1  # snapshot number, only if Stagger
-    # nlte settings, if nlte_flag = False, these are not used
-    nlte_iterations_max = nlte_iter
-    nlte_convergence_limit = 0.00001
-    if nlte_element != "none":
-        element_in_nlte = nlte_element
-        nlte_flag = True
-    else:
-        element_in_nlte = ""
-        nlte_flag = False
-    element_abundances = xfeabundances
-    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
-
-    wavelength, norm_flux, parsed_linelist_info = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                      atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
-                                                      nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
-                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
-                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
-                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit,
-                                                      plot_output=False)
-
-    parsed_linelist_dict = []
-    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
-    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
-    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
-        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
-
-    return list(wavelength), list(norm_flux), parsed_linelist_dict
-def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None):
-    if linelist_path is None:
-        linelist_path = "/Users/storm/docker_common_folder/TSFitPy/input_files/linelists/linelist_for_fitting/"
-    ts_paths = {"turbospec_path": "/Users/storm/docker_common_folder/TSFitPy/turbospectrum/exec/",  # change to /exec-gf/ if gnu compiler
-                       "interpol_path": "/Users/storm/docker_common_folder/TSFitPy/scripts/model_interpolators/",
-                       "model_atom_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/model_atoms/",
-                       "departure_file_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/nlte_data/",
-                       "model_atmosphere_grid_path": "/Users/storm/docker_common_folder/TSFitPy/input_files/model_atmospheres/",
-                       "line_list_path": linelist_path}  # change to path to 3D atmosphere if running 3D model atmosphere
-
-    atmosphere_type = "1D"  # "1D" or "3D"
-    if nlte_element != "none":
-        element_in_nlte = [nlte_element]
-        nlte_flag = True
-    else:
-        element_in_nlte = [""]
-        nlte_flag = False
-    element_abundances = xfeabundances
-    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
-
-    wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                      atmosphere_type, nlte_flag, element_in_nlte, element_abundances, True,
-                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
-
-    parsed_linelist_dict = []
-    return list(wavelength), list(norm_flux), parsed_linelist_dict
-
-
-@app.route('/plot_observed', methods=['POST'])
-def plot_observed_spectra():
-    data = request.json
-    rv = float(data['obs_rv'])
-    rv_synthetic = float(data['synthetic_rv'])
-
-    wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
-
-    flux_synthetic = [], []
-    wavelength_synthetic_rv_corrected = []
-
-    if data_results_storage['observed_spectra_synthetic']:
-        wavelength_synthetic, flux_synthetic = data_results_storage['observed_spectra_synthetic']["wavelength"], data_results_storage['observed_spectra_synthetic']["flux"]
-        if np.size(wavelength_synthetic) > 0:
-            wavelength_synthetic_rv_corrected = apply_doppler_correction(wavelength_synthetic, rv_synthetic)
-
-    wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
-
-
-
-    fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed, wavelength_synthetic_rv_corrected, flux_synthetic)
-    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
-
-@app.route('/plot_abundance_diagram', methods=['POST'])
+@app.route('/get_plot_abundance_diagram', methods=['POST'])
 def plot_abundance_diagram():
     data = request.json
     remove_errors = data['removeErrorsBool']
@@ -323,8 +242,16 @@ def plot_abundance_diagram():
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
-@app.route('/get_m3d_plot', methods=['POST'])
-def get_plot_m3d():
+"""
+GENERATE SYNTHETIC SPECTRUM
+"""
+
+@app.route('/generate_synthetic_spectrum')
+def render_html_generate_synthetic_spectrum():
+    return render_template('generate_synthetic_spectrum.html')
+
+@app.route('/get_plot_synthetic_spectrum', methods=['POST'])
+def get_plot_synthetic_spectrum():
     data = request.json
     teff = float(data['teff'])
     logg = float(data['logg'])
@@ -384,6 +311,124 @@ def get_plot_m3d():
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
 
+
+"""
+PLOT OBSERVED SPECTRA
+"""
+
+@app.route('/plot_observed_spectrum')
+def render_html_plot_observed_spectrum():
+    return render_template('plot_observed_spectra.html')
+
+@app.route('/get_plot_observed_spectrum', methods=['POST'])
+def get_plot_observed_spectra():
+    data = request.json
+    rv = float(data['obs_rv'])
+    rv_synthetic = float(data['synthetic_rv'])
+
+    wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
+
+    flux_synthetic = [], []
+    wavelength_synthetic_rv_corrected = []
+
+    if data_results_storage['observed_spectra_synthetic']:
+        wavelength_synthetic, flux_synthetic = data_results_storage['observed_spectra_synthetic']["wavelength"], data_results_storage['observed_spectra_synthetic']["flux"]
+        if np.size(wavelength_synthetic) > 0:
+            wavelength_synthetic_rv_corrected = apply_doppler_correction(wavelength_synthetic, rv_synthetic)
+
+    wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
+
+
+
+    fig = plot.plot_observed_spectra(wavelength_observed_rv_corrected, flux_observed, wavelength_synthetic_rv_corrected, flux_synthetic)
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
+
+
+"""
+CALLING FORTRAN CODES TO GENERATE SPECTRA
+"""
+
+def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=-5.0):
+    if linelist_path is None:
+        linelist_path = default_paths["default_linelist_path"]
+    m3dis_paths = {"m3dis_path": default_paths["m3dis_path"],
+                   "nlte_config_path": default_paths["nlte_config_path"],
+                   "model_atom_path": default_paths["model_atom_path"],
+                   "model_atmosphere_grid_path": default_paths["model_atmosphere_grid_path"],
+                   "line_list_path": linelist_path,
+                   "3D_atmosphere_path": default_paths["3D_atmosphere_path"]}  # change to path to 3D atmosphere if running 3D model atmosphere
+
+    atmosphere_type = "1D"  # "1D" or "3D"
+    hash_table_size = 100
+    n_nu = 16
+    mpi_cores = 8
+    # if 3D atmosphere is used, then the following is needed
+    dims = 23  # dimensions of the atmosphere
+    atmos_format = 'Multi'  # MUST, Stagger or Multi
+    nx = 10  # only if Stagger
+    ny = 10  # only if Stagger
+    nz = 230  # only if Stagger
+    snap = 1  # snapshot number, only if Stagger
+    # nlte settings, if nlte_flag = False, these are not used
+    nlte_iterations_max = nlte_iter
+    nlte_convergence_limit = 0.00001
+    if nlte_element != "none":
+        element_in_nlte = nlte_element
+        nlte_flag = True
+    else:
+        element_in_nlte = ""
+        nlte_flag = False
+    element_abundances = xfeabundances
+    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
+
+    wavelength, norm_flux, parsed_linelist_info = plot_synthetic_data_m3dis(m3dis_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                      atmosphere_type, atmos_format, n_nu, mpi_cores, hash_table_size,
+                                                      nlte_flag, element_in_nlte, element_abundances, snap, dims, nx, ny, nz,
+                                                      nlte_iterations_max, nlte_convergence_limit, m3dis_package_name="m3dis",
+                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation,
+                                                      return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit,
+                                                      plot_output=False)
+
+    parsed_linelist_dict = []
+    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
+    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
+    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
+
+    return list(wavelength), list(norm_flux), parsed_linelist_dict
+
+def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None):
+    if linelist_path is None:
+        linelist_path = default_paths["default_linelist_path"]
+    ts_paths = {"turbospec_path": default_paths["turbospec_path"],
+                       "interpol_path": default_paths["interpol_path"],
+                       "model_atom_path": default_paths["model_atom_path"],
+                       "departure_file_path": default_paths["departure_file_path"],
+                       "model_atmosphere_grid_path": default_paths["model_atmosphere_grid_path"],
+                       "line_list_path": linelist_path}  # change to path to 3D atmosphere if running 3D model atmosphere
+
+    atmosphere_type = "1D"  # "1D" or "3D"
+    if nlte_element != "none":
+        element_in_nlte = [nlte_element]
+        nlte_flag = True
+    else:
+        element_in_nlte = [""]
+        nlte_flag = False
+    element_abundances = xfeabundances
+    # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
+
+    wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                      atmosphere_type, nlte_flag, element_in_nlte, element_abundances, True,
+                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
+
+    parsed_linelist_dict = []
+    return list(wavelength), list(norm_flux), parsed_linelist_dict
+
+
+"""
+CALCULATE EQUIVALENT WIDTH
+"""
+
 @app.route('/synthetic_calculate_integral', methods=['POST'])
 def synthetic_calculate_integral():
     """left_x_boundary: document.getElementById('left_x_boundary').value,
@@ -429,6 +474,9 @@ def synthetic_calculate_integral():
         ew_observed = calculate_equivalent_width(x_obs[indices_observed], y_obs[indices_observed], left_x_boundary, right_x_boundary) * 1000
     return jsonify({"integral_synthetic": round(ew_fitted, 3), "integral_observed": round(ew_observed, 3)})
 
+"""
+UPLOADING RESULTS FILES AND HANDLING THEM
+"""
 
 @app.route('/upload_zip', methods=['POST'])
 def upload_zipped_file():
@@ -493,7 +541,7 @@ def upload_folder():
     # now route to analyse_results
     return jsonify({'message': 'Upload successful', 'status': 'success'})
 
-@app.route('/upload_spectra', methods=['POST'])
+@app.route('/upload_observed_spectra', methods=['POST'])
 def upload_spectra():
     # Get the uploaded files
     file = request.files['file']
@@ -519,7 +567,7 @@ def upload_spectra():
     #return redirect(url_for('generate_synthetic_spectrum'))
     return jsonify({'message': 'Upload successful', 'status': 'success'})
 
-@app.route('/upload_spectra_synthetic', methods=['POST'])
+@app.route('/upload_synthetic_spectra', methods=['POST'])
 def upload_spectra_synthetic():
     # Get the uploaded files
     file = request.files['file']
@@ -654,113 +702,6 @@ def process_file(folder_path, processed_dict):
             data_results_storage['fitted_spectra'][filename]['vmic'][linemask_idx] = output_file_df_specname["Microturb"].values[output_file_df_index]
             data_results_storage['fitted_spectra'][filename]['Fe_H'][linemask_idx] = output_file_df_specname["Fe_H"].values[output_file_df_index]
 
-
-
-    #print(filepath)
-
-# Optional: Function to clean up temporary files
-def clean_up(directory):
-    for file in os.listdir(directory):
-        os.remove(os.path.join(directory, file))
-    os.rmdir(directory)
-
-@app.route('/plot_fitted_result', methods=['POST'])
-def plot_fitted_result():
-    #print("plot_fitted_result")
-    data = request.json
-    specname = data['specname']
-    linemask_to_plot = float(data['linemask'])
-    if specname in data_results_storage['fitted_spectra']:
-        # find linemask_index by finding which linemask_center_wavelengths is closest to the linemask_to_plot
-        linemask_index = np.argmin(np.abs(data_results_storage["linemask_center_wavelengths"] - linemask_to_plot))
-        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_index]
-        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_index]
-        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_index]
-        # load spectra
-        wavelength_fitted = (data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
-        flux_fitted = (data_results_storage['fitted_spectra'][specname]["flux_fitted"])
-        wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
-        flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
-        rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
-        # apply rv correction
-        rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_index]
-        wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
-
-        title = f"{data_results_storage['fitted_value_label']} = {data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_index]:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_index]:.2f}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_index]:.6f}, flag error = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_index]}, flag warning = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_index]}"
-
-        fig = plot.create_plot_data(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title)
-        return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
-    else:
-        print(specname, data_results_storage['fitted_spectra'])
-    return None
-
-
-@app.route('/plot_results')
-def plot_results():
-    return render_template('plot_results.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
-
-@app.route('/analyse_results')
-def analyse_results():
-    return render_template('analyse_results.html', options=data_results_storage["options"], options_linemask=data_results_storage["linemask_center_wavelengths"])
-
-@app.route('/plot_fitted_result_one_star', methods=['POST'])
-def plot_fitted_result_one_star():
-    #print("plot_fitted_result")
-    data = request.json
-    specname = data['specname']
-    overplot_synthetic_data = data['overplotBlendsCheck']
-    linelist_path = data['linelistPath']
-    #print(specname)
-    figures = []
-    for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
-        center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
-        left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_idx]
-        right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_idx]
-        # load spectra
-        wavelength_fitted = (data_results_storage['fitted_spectra'][specname]["wavelength_fitted"])
-        flux_fitted = (data_results_storage['fitted_spectra'][specname]["flux_fitted"])
-        wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
-        flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
-        rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
-        # apply rv correction
-        rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
-        wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
-
-        if overplot_synthetic_data and (data_results_storage["fitting_method"] == "lbl" or data_results_storage["fitting_method"] == "vmic"):
-            teff, logg = data_results_storage['fitted_spectra'][specname]['teff'], data_results_storage['fitted_spectra'][specname]['logg']
-            feh = data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx]
-            vmic = data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx]
-            lmin, lmax = left_wavelengths - 0.5, right_wavelengths + 0.5
-            ldelta = 0.01
-            vmac = data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]
-            rotation = data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]
-            resolution = data_results_storage['fitted_spectra'][specname]['resolution']
-
-            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
-            xfeabundances[data_results_storage["fitted_element"]] = -40
-
-            linelist_path = linelist_path
-
-            wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
-        else:
-            wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
-
-
-        fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
-        title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, "
-                 f"chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
-                 f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
-                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, rot = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
-                 f"rv_fit = {rv_fitted:.2f}")
-        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_m3d, flux_m3d)
-        figure_data = {
-            "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
-            "value": fitted_value,
-            "columns": parsed_linelist_dict
-        }
-        figures.append(figure_data)
-
-    return jsonify(figures=figures)
 
 
 if __name__ == '__main__':

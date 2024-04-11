@@ -59,7 +59,7 @@
         };
         displayNotification("Loading plot...", 3000, "blue"); // Example: blue for processing
         $.ajax({
-            url: '/plot_abundance_diagram',
+            url: '/get_plot_abundance_diagram',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(requestData),
@@ -166,10 +166,7 @@
                     <a class="nav-link" href="/monitor">Job Monitor</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/plot_results">Results Viewer</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/analyse_results">Analyse results</a>
+                    <a class="nav-link" href="/spectral_fits_viewer">View spectral fits</a>
                 </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="#">Abundance diagram</a>
@@ -178,7 +175,7 @@
                     <a class="nav-link" href="/generate_synthetic_spectrum">Generate synthetic spectrum</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/plot_observed_spectra">Plot observed spectra</a>
+                    <a class="nav-link" href="/plot_observed_spectrum">Plot observed spectra</a>
                 </li>
             </ul>
         </div>
