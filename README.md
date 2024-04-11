@@ -1,4 +1,4 @@
-# TSGuiPy
+# TSGuiPy ![favicon.ico](src/static/favicon.ico)
 
 TSGuiPy is a GUI for TSFitPy spectral fitting tool. It is a user-friendly interface that allows users to interact with results from TSFitPy, look at the fits, derived abundances, plot synthetic and observed spectra. TSGuiPy provides a graphical interface that allows users to load data and visualize the results of the fitted results. It is designed to be easy to use and accessible to users with varying levels of experience in spectral fitting. TSGuiPy is built using the Flask library and is available as an open-source project on GitHub.
 
