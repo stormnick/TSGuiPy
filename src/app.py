@@ -400,7 +400,7 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
 def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None):
     if linelist_path is None:
         linelist_path = default_paths["default_linelist_path"]
-    ts_paths = {"turbospec_path": default_paths["turbospec_path"],
+    ts_paths = {"turbospec_path": default_paths["turbospectrum_path"],
                        "interpol_path": default_paths["interpol_path"],
                        "model_atom_path": default_paths["model_atom_path"],
                        "departure_file_path": default_paths["departure_file_path"],
