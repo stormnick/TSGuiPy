@@ -160,6 +160,29 @@
             </form>
             <hr class="my-4">
             <div class="row form-group">
+                <div class="col-md-8">
+                Options for overplotting blends!! (calls spectral synthesise, so takes time):
+                </div>
+                </div>
+                <div class="row form-group">
+            <div class="col-md-2">
+                <label for="code_type">M3D/TS:</label>
+            </div>
+            <div class="col-md-2">
+                    <select class="form-control" id="code_type" name="code_type" value="TS">
+                        <option>TS</option>
+                        <option>M3D</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="synthesiseMolecules">Include molecules (slow!):</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
+                </div>
+            </div>
+
+            <div class="row form-group">
                 <div class="col-md-2">
                     <label for="overplotBlendsCheck">Overplot blends:</label>
                 </div>
@@ -173,15 +196,16 @@
                     <input type="text" class="form-control" id="m3d_linelist" name="m3d_linelist" value="../../input_files/linelists/linelist_for_fitting/">
                 </div>
             </div>
+
             <hr class="my-4">
-            <form id="specnameChoiceForm" method="post">
-                <select id="specname">
-                    {% for option in options %}
-                    <option value="{{ option }}">{{ option }}</option>
-                    {% endfor %}
-                </select>
-                <input class="btn btn-info" type="submit" value="Generate results">
-            </form>
+                    <form id="specnameChoiceForm" method="post">
+                    <select id="specname">
+                        {% for option in options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                    <input class="btn btn-info" type="submit" value="Generate results">
+                </form>
                 <div id="plotsGrid"></div>
                 <div id="meanValue">Mean Value: </div>
                 <div id="standardError">Standard error: </div>
@@ -197,7 +221,9 @@
         const requestData = {
             specname: document.getElementById("specname").value,
             overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked,
-            linelistPath: document.getElementById("m3d_linelist").value
+            linelistPath: document.getElementById("m3d_linelist").value,
+            code_type: document.getElementById("code_type").value,
+            synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
         };
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots

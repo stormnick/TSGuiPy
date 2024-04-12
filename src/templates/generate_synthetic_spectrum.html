@@ -73,7 +73,8 @@
         obs_rv: document.getElementById("obs_rv").value,
         loggf_limit: document.getElementById("m3d_loggf_limit").value,
         linelist_path: document.getElementById("m3d_linelist").value,
-        code_type: document.getElementById("code_type").value
+        code_type: document.getElementById("code_type").value,
+        synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
     };
 
     $.ajax({
@@ -469,7 +470,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label for="m3d_nlte_iter">NLTE iterations:</label>
+                    <label for="m3d_nlte_iter">NLTE iterations (M3D only):</label>
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
@@ -511,13 +512,19 @@
                     <label for="code_type">M3D/TS:</label>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-control" id="code_type" name="code_type" value="m3d">
-                        <option>M3D</option>
+                    <select class="form-control" id="code_type" name="code_type" value="TS">
                         <option>TS</option>
+                        <option>M3D</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <button class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
+                </div>
+                <div class="col-md-2">
+                    <label for="synthesiseMolecules">Include molecules (slow!):</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
                 </div>
             </div>
             <div id="integral_synthetic"></div>

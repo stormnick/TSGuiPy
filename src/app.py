@@ -136,6 +136,8 @@ def get_plot_fitted_result_one_star():
     specname = data['specname']
     overplot_synthetic_data = data['overplotBlendsCheck']
     linelist_path = data['linelistPath']
+    code_type = data['code_type']
+    synthesise_molecules = data['synthesiseMolecules']
     #print(specname)
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
@@ -166,8 +168,12 @@ def get_plot_fitted_result_one_star():
             xfeabundances[data_results_storage["fitted_element"]] = -40
 
             linelist_path = linelist_path
-
-            wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
+            if code_type.lower() == "m3d":
+                wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
+            elif code_type.lower() == "ts":
+                wavelength_m3d, flux_m3d, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, "none",
+                                                          xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path,
+                                                          synthesise_molecules=synthesise_molecules)
         else:
             wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
 
@@ -270,6 +276,7 @@ def get_plot_synthetic_spectrum():
     loggf_limit = float(data['loggf_limit'])
     linelist_path = data['linelist_path']
     code_type = data['code_type']
+    synthesise_molecules = data['synthesiseMolecules']
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -295,7 +302,8 @@ def get_plot_synthetic_spectrum():
     elif code_type.lower() == 'ts':
         wavelength, flux, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
                                                           element_abundances, vmac, rotation, resolution,
-                                                          loggf_limit=loggf_limit, linelist_path=linelist_path)
+                                                          loggf_limit=loggf_limit, linelist_path=linelist_path,
+                                                          synthesise_molecules=synthesise_molecules)
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]
@@ -397,7 +405,7 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
 
     return list(wavelength), list(norm_flux), parsed_linelist_dict
 
-def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None):
+def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None, synthesise_molecules=False):
     if linelist_path is None:
         linelist_path = default_paths["default_linelist_path"]
     ts_paths = {"turbospec_path": default_paths["turbospectrum_path"],
@@ -418,8 +426,8 @@ def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundanc
     # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
 
     wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                      atmosphere_type, nlte_flag, element_in_nlte, element_abundances, True,
-                                                      verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
+                                                atmosphere_type, nlte_flag, element_in_nlte, element_abundances, synthesise_molecules,
+                                                verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
 
     parsed_linelist_dict = []
     return list(wavelength), list(norm_flux), parsed_linelist_dict
