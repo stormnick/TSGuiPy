@@ -184,7 +184,30 @@ def get_plot_fitted_result_one_star():
                  f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
                  f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, rot = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
                  f"rv_fit = {rv_fitted:.2f}")
-        fig = plot.create_plot_data_one_star(wavelength_fitted, flux_fitted, wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_m3d, flux_m3d)
+        # for wavelength_fitted if difference between the points is lower than ldelta, remove any points in-between such that the difference is higher than ldelta
+        # in general difference is constant
+        filtered_wavelengths = [wavelength_fitted[0]]  # Start with the first element
+        filtered_flux = [flux_fitted[0]]
+        ldelta_plotted_synthetic = 0.0075
+
+        for i in range(1, len(wavelength_fitted)):
+            # Check if the current point should be added:
+            if abs(wavelength_fitted[i] - filtered_wavelengths[-1]) > ldelta_plotted_synthetic:
+                filtered_wavelengths.append(wavelength_fitted[i])
+                filtered_flux.append(flux_fitted[i])
+
+        if wavelength_m3d:
+            filtered_m3d_wavelengths = [wavelength_m3d[0]]
+            filtered_m3d_flux = [flux_m3d[0]]
+            for i in range(1, len(wavelength_m3d)):
+                # Check if the current point should be added:
+                if abs(wavelength_m3d[i] - filtered_m3d_wavelengths[-1]) > ldelta_plotted_synthetic:
+                    filtered_m3d_wavelengths.append(wavelength_m3d[i])
+                    filtered_m3d_flux.append(flux_m3d[i])
+        else:
+            filtered_m3d_wavelengths, filtered_m3d_flux = [], []
+
+        fig = plot.create_plot_data_one_star(np.asarray(filtered_wavelengths), np.asarray(filtered_flux), wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, filtered_m3d_wavelengths, filtered_m3d_flux)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
             "value": fitted_value,
