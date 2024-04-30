@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import os
 
+import scipy
+
 # This is a workaround to add the parent directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',)))
 
@@ -279,6 +281,51 @@ GENERATE SYNTHETIC SPECTRUM
 def render_html_generate_synthetic_spectrum():
     return render_template('generate_synthetic_spectrum.html')
 
+def degrade_to_snr(flux, snr):
+    """
+    :param wavelength:
+    :param flux:
+    :param snr:
+    :return: degraded flux
+    """
+    flux = np.asarray(flux)
+    # Calculate the standard deviation of the noise for each flux point
+    sigma = flux / snr
+
+    # Generate Gaussian noise
+    noise = np.random.normal(0, sigma, size=flux.shape)
+
+    # Add noise to the original flux to create the degraded spectrum
+    degraded_flux = flux + noise
+
+    return list(degraded_flux)
+
+def resample_spectrum(wavelengths, flux, sampling_rate_AA):
+    """
+    Resample a spectrum to a new wavelength grid with a specified sampling rate in milliangstroms.
+
+    Parameters:
+    - wavelengths (array-like): The original wavelengths in angstroms.
+    - flux (array-like): The original flux values.
+    - sampling_rate_AA (float): The desired sampling rate in milliangstroms.
+
+    Returns:
+    - tuple: A tuple containing the new wavelengths and the resampled flux values.
+    """
+    new_wavelength_start, new_wavelength_end = np.min(wavelengths), np.max(wavelengths)
+
+    # Create the new wavelength grid
+    new_wavelengths = np.arange(new_wavelength_start, new_wavelength_end, sampling_rate_AA)
+
+    # Create the interpolation function
+    interp_func = scipy.interpolate.interp1d(wavelengths, flux, kind='linear', fill_value=1)
+
+    # Interpolate the flux to the new wavelength grid
+    new_flux = interp_func(new_wavelengths)
+
+    return new_wavelengths, new_flux
+
+
 @app.route('/get_plot_synthetic_spectrum', methods=['POST'])
 def get_plot_synthetic_spectrum():
     data = request.json
@@ -299,7 +346,8 @@ def get_plot_synthetic_spectrum():
     loggf_limit = float(data['loggf_limit'])
     linelist_path = data['linelist_path']
     code_type = data['code_type']
-    synthesise_molecules = data['synthesiseMolecules']
+    synthesise_molecules = data['synthesiseMolecules'],
+    snr = float(data['snr'])
     #print("get_plot_m3d")
 
     element_abundances = {}
@@ -327,6 +375,16 @@ def get_plot_synthetic_spectrum():
                                                           element_abundances, vmac, rotation, resolution,
                                                           loggf_limit=loggf_limit, linelist_path=linelist_path,
                                                           synthesise_molecules=synthesise_molecules)
+
+    wavelength = np.asarray(wavelength)
+    flux = np.asarray(flux)
+
+    # we need to resample back to delta lambda
+    wavelength, flux = resample_spectrum(wavelength, flux, ldelta)
+
+    if snr != 0:
+        flux = degrade_to_snr(flux, snr)
+
     if data_results_storage["observed_spectra"]:
         wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
         flux_observed = data_results_storage['observed_spectra']["flux"]

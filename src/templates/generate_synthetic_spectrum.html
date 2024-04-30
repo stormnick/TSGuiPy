@@ -75,6 +75,7 @@
         linelist_path: document.getElementById("m3d_linelist").value,
         code_type: document.getElementById("code_type").value,
         synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
+        snr: document.getElementById("m3d_snr").value
     };
 
     $.ajax({
@@ -442,6 +443,12 @@
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="m3d_resolution" name="m3d_resolution"  value="0">
+                </div>
+                <div class="col-sm-1">
+                    <label for="m3d_snr">SNR (0=perfect)</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_snr" name="m3d_snr"  value="0">
                 </div>
             </div>
             <div class="row form-group">
