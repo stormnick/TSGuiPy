@@ -508,7 +508,7 @@ def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundanc
 
     wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                 atmosphere_type, nlte_flag, element_in_nlte, element_abundances, synthesise_molecules,
-                                                verbose=False, macro=vmac, resolution=resolution, rotation=rotation)
+                                                verbose=False, macro=vmac, resolution=resolution, rotation=rotation, do_matplotlib_plot=False)
 
     parsed_linelist_dict = []
     return list(wavelength), list(norm_flux), parsed_linelist_dict
