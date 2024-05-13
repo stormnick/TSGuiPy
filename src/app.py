@@ -415,9 +415,16 @@ def get_plot_observed_spectra():
     rv = float(data['obs_rv'])
     rv_synthetic = float(data['synthetic_rv'])
 
-    wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
+    wavelength_observed_rv_corrected = []
+    wavelength_observed, flux_observed = [], []
 
-    flux_synthetic = [], []
+    if data_results_storage['observed_spectra']:
+        wavelength_observed, flux_observed = data_results_storage['observed_spectra']["wavelength"], data_results_storage['observed_spectra']["flux"]
+        if np.size(wavelength_observed) > 0:
+            wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
+
+
+    wavelength_synthetic, flux_synthetic = [], []
     wavelength_synthetic_rv_corrected = []
 
     if data_results_storage['observed_spectra_synthetic']:
@@ -425,7 +432,6 @@ def get_plot_observed_spectra():
         if np.size(wavelength_synthetic) > 0:
             wavelength_synthetic_rv_corrected = apply_doppler_correction(wavelength_synthetic, rv_synthetic)
 
-    wavelength_observed_rv_corrected = apply_doppler_correction(wavelength_observed, rv)
 
 
 
