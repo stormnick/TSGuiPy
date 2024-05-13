@@ -650,6 +650,10 @@ def upload_spectra():
             filepath = os.path.join(temp_dir, file.filename)
         file.save(filepath)
         wavelength_observed, flux_observed = np.loadtxt(filepath, unpack=True, usecols=(0,1), dtype=float)
+        # find any nans and remove them
+        indices = np.where(np.isnan(flux_observed))
+        wavelength_observed = np.delete(wavelength_observed, indices)
+        flux_observed = np.delete(flux_observed, indices)
         data_results_storage['observed_spectra']["wavelength"] = wavelength_observed
         data_results_storage['observed_spectra']["flux"] = flux_observed
         #parsed_config_dict = load_output_data(temp_dir)
