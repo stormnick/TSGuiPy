@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 import plotly.graph_objs as go
 import plotly.express as px
+import pandas as pd
 
 def create_plot():
     trace = go.Scatter(x=[1, 2, 3], y=[4, 5, 6], mode='markers')
@@ -80,7 +81,17 @@ def plot_abundance_plot(x_values, y_values, x_label, y_label, title):
     )
     return fig
 
-def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title, wavelength_synthetic=[], flux_synthetic=[]):
+def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right_line, centre_line, title, wavelength_synthetic=None, flux_synthetic=None, wavelength_synt_extra1=None, flux_synt_extra1=None, wavelength_synt_extra2=None, flux_synt_extra2=None):
+    if wavelength_synthetic is None:
+        wavelength_synthetic = []
+        flux_synthetic = []
+    if wavelength_synt_extra1 is None:
+        wavelength_synt_extra1 = []
+        flux_synt_extra1 = []
+    if wavelength_synt_extra2 is None:
+        wavelength_synt_extra2 = []
+        flux_synt_extra2 = []
+
     # plot fitted as line
     trace = go.Scatter(x=list(x_fitted), y=list(y_fitted), mode='lines', line=dict(color='red'), name='fitted')
     # plot observed data as a scatter plot
@@ -97,6 +108,11 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
     # plot the synthetic data as a line but with alpha=0.5 and grey colour
     if wavelength_synthetic and flux_synthetic:
         trace_synthetic = go.Scatter(x=wavelength_synthetic, y=flux_synthetic, mode='lines', line=dict(color='grey'), opacity=0.5, name='synthetic')
+    if wavelength_synt_extra1 and flux_synt_extra1:
+        trace_synthetic_extra1 = go.Scatter(x=wavelength_synt_extra1, y=flux_synt_extra1, mode='lines', line=dict(color='pink'), opacity=0.5)
+    if wavelength_synt_extra2 and flux_synt_extra2:
+        trace_synthetic_extra2 = go.Scatter(x=wavelength_synt_extra2, y=flux_synt_extra2, mode='lines', line=dict(color='pink'), opacity=0.5)
+
     # xlimit is the range of x values to plot
     xlimit = [left_line - 0.1, right_line + 0.1]
     # find y_fitted that is within xlimit
@@ -107,12 +123,14 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
     else:
         ylimit = 0, 1.03
     layout = go.Layout(title=title)
+    extra_traces = []
     if wavelength_synthetic and flux_synthetic:
-        fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line, trace_synthetic], layout=layout,
-                        layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
-    else:
-        fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line], layout=layout,
-                        layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
+        extra_traces.append(trace_synthetic)
+    if wavelength_synt_extra1 and flux_synt_extra1:
+        extra_traces.append(trace_synthetic_extra1)
+    if wavelength_synt_extra2 and flux_synt_extra2:
+        extra_traces.append(trace_synthetic_extra2)
+    fig = go.Figure(data=[trace_obs, trace, trace_left_line, trace_right_line, trace_centre_line, *extra_traces], layout=layout, layout_xaxis_range=xlimit, layout_yaxis_range=ylimit)
     fig.update_layout(
         xaxis_title="Wavelength",
         yaxis_title="Normalised Flux"
