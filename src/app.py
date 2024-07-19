@@ -140,6 +140,10 @@ def get_plot_fitted_result_one_star():
     linelist_path = data['linelistPath']
     code_type = data['code_type']
     synthesise_molecules = data['synthesiseMolecules']
+    #synthesiseSensitivity
+    #sensitivity_value
+    synthesis_sensitivity = data['synthesiseSensitivity']
+    sensitivity_value = data['sensitivityValue']
     #print(specname)
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
@@ -156,6 +160,9 @@ def get_plot_fitted_result_one_star():
         rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
         wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
 
+        wavelength_m3d_increased_abund, flux_m3d_increased_abund = [], []
+        wavelength_m3d_decreased_abund, flux_m3d_decreased_abund = [], []
+
         if overplot_synthetic_data and (data_results_storage["fitting_method"] == "lbl" or data_results_storage["fitting_method"] == "vmic"):
             teff, logg = data_results_storage['fitted_spectra'][specname]['teff'], data_results_storage['fitted_spectra'][specname]['logg']
             feh = data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx]
@@ -167,7 +174,7 @@ def get_plot_fitted_result_one_star():
             resolution = data_results_storage['fitted_spectra'][specname]['resolution']
 
             xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
-            xfeabundances[data_results_storage["fitted_element"]] = -40
+            xfeabundances[data_results_storage["fitted_element"]] = -15
 
             linelist_path = linelist_path
             if code_type.lower() == "m3d":
@@ -176,6 +183,29 @@ def get_plot_fitted_result_one_star():
                 wavelength_m3d, flux_m3d, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, "none",
                                                           xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path,
                                                           synthesise_molecules=synthesise_molecules)
+            if synthesis_sensitivity:
+                xfeabundances_increased_abund = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
+                xfeabundances_increased_abund[data_results_storage["fitted_element"]] = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx] + sensitivity_value
+                xfeabundances_decreased_abund = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
+                xfeabundances_decreased_abund[data_results_storage["fitted_element"]] = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx] - sensitivity_value
+                if code_type.lower() == "m3d":
+                    wavelength_m3d_increased_abund, flux_m3d_increased_abund, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                                              "none", 0, xfeabundances_increased_abund, vmac, rotation,
+                                                                              resolution, linelist_path=linelist_path)
+                    wavelength_m3d_decreased_abund, flux_m3d_decreased_abund, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                                              "none", 0, xfeabundances_decreased_abund, vmac, rotation,
+                                                                              resolution, linelist_path=linelist_path)
+                elif code_type.lower() == "ts":
+                    wavelength_m3d_increased_abund, flux_m3d_increased_abund, _ = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                                             "none",
+                                                                             xfeabundances_increased_abund, vmac, rotation, resolution,
+                                                                             linelist_path=linelist_path,
+                                                                             synthesise_molecules=synthesise_molecules)
+                    wavelength_m3d_decreased_abund, flux_m3d_decreased_abund, _ = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta,
+                                                                                "none",
+                                                                                xfeabundances_decreased_abund, vmac, rotation, resolution,
+                                                                                linelist_path=linelist_path,
+                                                                                synthesise_molecules=synthesise_molecules)
         else:
             wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
 
@@ -209,7 +239,32 @@ def get_plot_fitted_result_one_star():
         else:
             filtered_m3d_wavelengths, filtered_m3d_flux = [], []
 
-        fig = plot.create_plot_data_one_star(np.asarray(filtered_wavelengths), np.asarray(filtered_flux), wavelength_observed_rv, flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, filtered_m3d_wavelengths, filtered_m3d_flux)
+        if wavelength_m3d_increased_abund:
+            filtered_m3d_wavelengths_increased_abund = [wavelength_m3d_increased_abund[0]]
+            filtered_m3d_flux_increased_abund = [flux_m3d_increased_abund[0]]
+            for i in range(1, len(wavelength_m3d_increased_abund)):
+                # Check if the current point should be added:
+                if abs(wavelength_m3d_increased_abund[i] - filtered_m3d_wavelengths_increased_abund[-1]) > ldelta_plotted_synthetic:
+                    filtered_m3d_wavelengths_increased_abund.append(wavelength_m3d_increased_abund[i])
+                    filtered_m3d_flux_increased_abund.append(flux_m3d_increased_abund[i])
+        else:
+            filtered_m3d_wavelengths_increased_abund, filtered_m3d_flux_increased_abund = [], []
+
+        if wavelength_m3d_decreased_abund:
+            filtered_m3d_wavelengths_decreased_abund = [wavelength_m3d_decreased_abund[0]]
+            filtered_m3d_flux_decreased_abund = [flux_m3d_decreased_abund[0]]
+            for i in range(1, len(wavelength_m3d_decreased_abund)):
+                # Check if the current point should be added:
+                if abs(wavelength_m3d_decreased_abund[i] - filtered_m3d_wavelengths_decreased_abund[-1]) > ldelta_plotted_synthetic:
+                    filtered_m3d_wavelengths_decreased_abund.append(wavelength_m3d_decreased_abund[i])
+                    filtered_m3d_flux_decreased_abund.append(flux_m3d_decreased_abund[i])
+        else:
+            filtered_m3d_wavelengths_decreased_abund, filtered_m3d_flux_decreased_abund = [], []
+
+        fig = plot.create_plot_data_one_star(np.asarray(filtered_wavelengths), np.asarray(filtered_flux), wavelength_observed_rv,
+                                             flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, filtered_m3d_wavelengths,
+                                             filtered_m3d_flux, filtered_m3d_wavelengths_increased_abund, filtered_m3d_flux_increased_abund,
+                                             filtered_m3d_wavelengths_decreased_abund, filtered_m3d_flux_decreased_abund)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
             "value": fitted_value,
