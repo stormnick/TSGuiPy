@@ -107,11 +107,11 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
                                    showlegend=False)
     # plot the synthetic data as a line but with alpha=0.5 and grey colour
     if wavelength_synthetic and flux_synthetic:
-        trace_synthetic = go.Scatter(x=wavelength_synthetic, y=flux_synthetic, mode='lines', line=dict(color='grey'), opacity=0.5, name='synthetic')
+        trace_synthetic = go.Scatter(x=wavelength_synthetic, y=flux_synthetic, mode='lines', line=dict(color='grey'), opacity=0.4, name='blends')
     if wavelength_synt_extra1 and flux_synt_extra1:
-        trace_synthetic_extra1 = go.Scatter(x=wavelength_synt_extra1, y=flux_synt_extra1, mode='lines', line=dict(color='pink'), opacity=0.5)
+        trace_synthetic_extra1 = go.Scatter(x=wavelength_synt_extra1, y=flux_synt_extra1, mode='lines', line=dict(color='teal'), opacity=0.4, name='increased A(X)')
     if wavelength_synt_extra2 and flux_synt_extra2:
-        trace_synthetic_extra2 = go.Scatter(x=wavelength_synt_extra2, y=flux_synt_extra2, mode='lines', line=dict(color='pink'), opacity=0.5)
+        trace_synthetic_extra2 = go.Scatter(x=wavelength_synt_extra2, y=flux_synt_extra2, mode='lines', line=dict(color='teal'), opacity=0.4, name='decreased A(X)')
 
     # xlimit is the range of x values to plot
     xlimit = [left_line - 0.1, right_line + 0.1]

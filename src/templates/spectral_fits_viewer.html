@@ -159,6 +159,7 @@
                 <input type="submit" value="Upload .zip file with the results">
             </form>
             <hr class="my-4">
+            <!--
             <div class="row form-group">
                 <div class="col-md-8">
                 Options for overplotting blends!! (calls spectral synthesise, so takes time):
@@ -181,18 +182,7 @@
                     <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
                 </div>
             </div>
-            <div class="row form-group">
-
-                <div class="col-md-4">
-                    <label for="synthesiseSensitivity">Synthesise plus/minus fitted value of:</label>
-                </div>
-                <div class="col-md-2">
-                    <input type="checkbox" class="form-check-input" id="synthesiseSensitivity" name="synthesiseSensitivity">
-                </div>
-                <div class="col-md-2">
-                    <input type="number" class="form-control" id="sensitivityValue" name="sensitivityValue" value="0.1">
-                </div>
-            </div>
+            -->
 
             <div class="row form-group">
                 <div class="col-md-2">
@@ -201,6 +191,14 @@
                 <div class="col-md-2">
                     <input type="checkbox" class="form-check-input" id="overplotBlendsCheck" name="overplotBlendsCheck">
                 </div>
+                <div class="col-md-2">
+                    <label for="m3d_loggf_limit">loggf limit blends:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit" value="-100">
+                </div>
+            </div>
+            <div class="row form-group">
                 <div class="col-md-2">
                     <label for="m3d_linelist">Linelist path</label>
                 </div>
@@ -234,10 +232,7 @@
             specname: document.getElementById("specname").value,
             overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked,
             linelistPath: document.getElementById("m3d_linelist").value,
-            code_type: document.getElementById("code_type").value,
-            synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
-            synthesiseSensitivity: document.getElementById("synthesiseSensitivity").checked,
-            sensitivityValue: parseFloat(document.getElementById("sensitivityValue").value)
+            loggf_limit: document.getElementById("m3d_loggf_limit").value
         };
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots

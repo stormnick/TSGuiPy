@@ -16,7 +16,7 @@ import numpy as np
 import plotly
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from TSGuiPy.src import plot
-from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data, plot_synthetic_data
+from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data, plot_synthetic_data, get_just_parsed_linelist
 from scripts.auxiliary_functions import apply_doppler_correction, calculate_equivalent_width
 from scripts.solar_abundances import periodic_table
 
@@ -138,13 +138,7 @@ def get_plot_fitted_result_one_star():
     specname = data['specname']
     overplot_synthetic_data = data['overplotBlendsCheck']
     linelist_path = data['linelistPath']
-    code_type = data['code_type']
-    synthesise_molecules = data['synthesiseMolecules']
-    #synthesiseSensitivity
-    #sensitivity_value
-    synthesis_sensitivity = data['synthesiseSensitivity']
-    sensitivity_value = data['sensitivityValue']
-    #print(specname)
+    loggf_limit = float(data['loggf_limit'])
     figures = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
         center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
@@ -156,58 +150,28 @@ def get_plot_fitted_result_one_star():
         wavelength_observed = data_results_storage['fitted_spectra'][specname]["wavelength_observed"]
         flux_observed = data_results_storage['fitted_spectra'][specname]["flux_observed"]
         rv_correction = data_results_storage['fitted_spectra'][specname]['spectra_rv']
+        wavelength_just_blend = data_results_storage['fitted_spectra'][specname]["wavelength_just_blend"]
+        flux_just_blend = data_results_storage['fitted_spectra'][specname]["flux_just_blend"]
+        wavelength_minus_sensitivity = data_results_storage['fitted_spectra'][specname]["wavelength_minus_sensitivity"]
+        flux_minus_sensitivity = data_results_storage['fitted_spectra'][specname]["flux_minus_sensitivity"]
+        wavelength_plus_sensitivity = data_results_storage['fitted_spectra'][specname]["wavelength_plus_sensitivity"]
+        flux_plus_sensitivity = data_results_storage['fitted_spectra'][specname]["flux_plus_sensitivity"]
         # apply rv correction
         rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
         wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
 
-        wavelength_m3d_increased_abund, flux_m3d_increased_abund = [], []
-        wavelength_m3d_decreased_abund, flux_m3d_decreased_abund = [], []
-
         if overplot_synthetic_data and (data_results_storage["fitting_method"] == "lbl" or data_results_storage["fitting_method"] == "vmic"):
-            teff, logg = data_results_storage['fitted_spectra'][specname]['teff'], data_results_storage['fitted_spectra'][specname]['logg']
-            feh = data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx]
-            vmic = data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx]
-            lmin, lmax = left_wavelengths - 0.5, right_wavelengths + 0.5
-            ldelta = 0.01
-            vmac = data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]
-            rotation = data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]
-            resolution = data_results_storage['fitted_spectra'][specname]['resolution']
+            parsed_linelist_info = get_just_parsed_linelist(left_wavelengths - 0.5, right_wavelengths + 0.5, linelist_path, loggf_limit)
 
-            xfeabundances = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
-            xfeabundances[data_results_storage["fitted_element"]] = -15
+            parsed_linelist_dict = []
+            for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
+                parsed_linelist_dict.append(
+                    {"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf,
+                     "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
 
-            linelist_path = linelist_path
-            if code_type.lower() == "m3d":
-                wavelength_m3d, flux_m3d, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, "none", 0, xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path)
-            elif code_type.lower() == "ts":
-                wavelength_m3d, flux_m3d, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, "none",
-                                                          xfeabundances, vmac, rotation, resolution, linelist_path=linelist_path,
-                                                          synthesise_molecules=synthesise_molecules)
-            if synthesis_sensitivity:
-                xfeabundances_increased_abund = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
-                xfeabundances_increased_abund[data_results_storage["fitted_element"]] = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx] + sensitivity_value
-                xfeabundances_decreased_abund = data_results_storage['fitted_spectra'][specname]['abundance_dict'].copy()
-                xfeabundances_decreased_abund[data_results_storage["fitted_element"]] = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx] - sensitivity_value
-                if code_type.lower() == "m3d":
-                    wavelength_m3d_increased_abund, flux_m3d_increased_abund, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                                              "none", 0, xfeabundances_increased_abund, vmac, rotation,
-                                                                              resolution, linelist_path=linelist_path)
-                    wavelength_m3d_decreased_abund, flux_m3d_decreased_abund, _ = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                                              "none", 0, xfeabundances_decreased_abund, vmac, rotation,
-                                                                              resolution, linelist_path=linelist_path)
-                elif code_type.lower() == "ts":
-                    wavelength_m3d_increased_abund, flux_m3d_increased_abund, _ = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                                             "none",
-                                                                             xfeabundances_increased_abund, vmac, rotation, resolution,
-                                                                             linelist_path=linelist_path,
-                                                                             synthesise_molecules=synthesise_molecules)
-                    wavelength_m3d_decreased_abund, flux_m3d_decreased_abund, _ = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta,
-                                                                                "none",
-                                                                                xfeabundances_decreased_abund, vmac, rotation, resolution,
-                                                                                linelist_path=linelist_path,
-                                                                                synthesise_molecules=synthesise_molecules)
+
         else:
-            wavelength_m3d, flux_m3d, parsed_linelist_dict = [], [], []
+            parsed_linelist_dict = []
 
 
         fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
@@ -228,43 +192,10 @@ def get_plot_fitted_result_one_star():
                 filtered_wavelengths.append(wavelength_fitted[i])
                 filtered_flux.append(flux_fitted[i])
 
-        if wavelength_m3d:
-            filtered_m3d_wavelengths = [wavelength_m3d[0]]
-            filtered_m3d_flux = [flux_m3d[0]]
-            for i in range(1, len(wavelength_m3d)):
-                # Check if the current point should be added:
-                if abs(wavelength_m3d[i] - filtered_m3d_wavelengths[-1]) > ldelta_plotted_synthetic:
-                    filtered_m3d_wavelengths.append(wavelength_m3d[i])
-                    filtered_m3d_flux.append(flux_m3d[i])
-        else:
-            filtered_m3d_wavelengths, filtered_m3d_flux = [], []
-
-        if wavelength_m3d_increased_abund:
-            filtered_m3d_wavelengths_increased_abund = [wavelength_m3d_increased_abund[0]]
-            filtered_m3d_flux_increased_abund = [flux_m3d_increased_abund[0]]
-            for i in range(1, len(wavelength_m3d_increased_abund)):
-                # Check if the current point should be added:
-                if abs(wavelength_m3d_increased_abund[i] - filtered_m3d_wavelengths_increased_abund[-1]) > ldelta_plotted_synthetic:
-                    filtered_m3d_wavelengths_increased_abund.append(wavelength_m3d_increased_abund[i])
-                    filtered_m3d_flux_increased_abund.append(flux_m3d_increased_abund[i])
-        else:
-            filtered_m3d_wavelengths_increased_abund, filtered_m3d_flux_increased_abund = [], []
-
-        if wavelength_m3d_decreased_abund:
-            filtered_m3d_wavelengths_decreased_abund = [wavelength_m3d_decreased_abund[0]]
-            filtered_m3d_flux_decreased_abund = [flux_m3d_decreased_abund[0]]
-            for i in range(1, len(wavelength_m3d_decreased_abund)):
-                # Check if the current point should be added:
-                if abs(wavelength_m3d_decreased_abund[i] - filtered_m3d_wavelengths_decreased_abund[-1]) > ldelta_plotted_synthetic:
-                    filtered_m3d_wavelengths_decreased_abund.append(wavelength_m3d_decreased_abund[i])
-                    filtered_m3d_flux_decreased_abund.append(flux_m3d_decreased_abund[i])
-        else:
-            filtered_m3d_wavelengths_decreased_abund, filtered_m3d_flux_decreased_abund = [], []
-
         fig = plot.create_plot_data_one_star(np.asarray(filtered_wavelengths), np.asarray(filtered_flux), wavelength_observed_rv,
-                                             flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, filtered_m3d_wavelengths,
-                                             filtered_m3d_flux, filtered_m3d_wavelengths_increased_abund, filtered_m3d_flux_increased_abund,
-                                             filtered_m3d_wavelengths_decreased_abund, filtered_m3d_flux_decreased_abund)
+                                             flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_just_blend,
+                                             flux_just_blend, wavelength_plus_sensitivity, flux_plus_sensitivity,
+                                             wavelength_minus_sensitivity, flux_minus_sensitivity)
         figure_data = {
             "figure": json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder),
             "value": fitted_value,
@@ -797,8 +728,9 @@ def process_file(folder_path, processed_dict):
     for (filename, spectra_rv) in zip(data_results_storage["parsed_config_dict"]["specname_fitlist"], data_results_storage["parsed_config_dict"]["rv_fitlist"]):
         data_results_storage['fitted_spectra'][filename] = {}
         # fitted spectra
+        filename_fitted_spectra = os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec")
         try:
-            wavelength, flux = np.loadtxt(os.path.join(folder_path, f"result_spectrum_{filename}_convolved.spec"), unpack=True, usecols=(0,1), dtype=float)
+            wavelength, flux = np.loadtxt(filename_fitted_spectra, unpack=True, usecols=(0,1), dtype=float)
             wavelength, flux = zip(*sorted(zip(wavelength, flux)))
         except FileNotFoundError:
             wavelength, flux = [], []
@@ -810,6 +742,41 @@ def process_file(folder_path, processed_dict):
         wavelength_observed, flux_observed = np.loadtxt(os.path.join(folder_path, filename), unpack=True, usecols=(0,1), dtype=float)
         data_results_storage['fitted_spectra'][filename]["wavelength_observed"] = wavelength_observed
         data_results_storage['fitted_spectra'][filename]["flux_observed"] = flux_observed
+        # sensitivity and just blend
+        filename_fitted_spectra_just_blend = filename_fitted_spectra.replace("_convolved.spec",
+                                                                             "_convolved_just_blend.spec")
+        filename_fitted_spectra_minus_sensitivity = filename_fitted_spectra.replace("_convolved.spec",
+                                                                                    "_convolved_minus_sensitivity.spec")
+        filename_fitted_spectra_plus_sensitivity = filename_fitted_spectra.replace("_convolved.spec",
+                                                                                   "_convolved_plus_sensitivity.spec")
+
+        # check if file just blend exists, then load, otherwise set empty arrays
+        if os.path.isfile(filename_fitted_spectra_just_blend):
+            wavelength_just_blend, flux_just_blend = np.loadtxt(filename_fitted_spectra_just_blend, dtype=float,
+                                                                unpack=True)
+        else:
+            wavelength_just_blend, flux_just_blend = np.array([]), np.array([])
+        wavelength_just_blend, flux_just_blend = list(wavelength_just_blend), list(flux_just_blend)
+        # check if file minus sensitivity exists, then load, otherwise set empty arrays
+        if os.path.isfile(filename_fitted_spectra_minus_sensitivity):
+            wavelength_minus_sensitivity, flux_minus_sensitivity = np.loadtxt(filename_fitted_spectra_minus_sensitivity,
+                                                                              dtype=float, unpack=True)
+        else:
+            wavelength_minus_sensitivity, flux_minus_sensitivity = np.array([]), np.array([])
+        wavelength_minus_sensitivity, flux_minus_sensitivity = list(wavelength_minus_sensitivity), list(flux_minus_sensitivity)
+        # check if file plus sensitivity exists, then load, otherwise set empty arrays
+        if os.path.isfile(filename_fitted_spectra_plus_sensitivity):
+            wavelength_plus_sensitivity, flux_plus_sensitivity = np.loadtxt(filename_fitted_spectra_plus_sensitivity,
+                                                                            dtype=float, unpack=True)
+        else:
+            wavelength_plus_sensitivity, flux_plus_sensitivity = np.array([]), np.array([])
+        wavelength_plus_sensitivity, flux_plus_sensitivity = list(wavelength_plus_sensitivity), list(flux_plus_sensitivity)
+        data_results_storage['fitted_spectra'][filename]["wavelength_just_blend"] = wavelength_just_blend
+        data_results_storage['fitted_spectra'][filename]["flux_just_blend"] = flux_just_blend
+        data_results_storage['fitted_spectra'][filename]["wavelength_minus_sensitivity"] = wavelength_minus_sensitivity
+        data_results_storage['fitted_spectra'][filename]["flux_minus_sensitivity"] = flux_minus_sensitivity
+        data_results_storage['fitted_spectra'][filename]["wavelength_plus_sensitivity"] = wavelength_plus_sensitivity
+        data_results_storage['fitted_spectra'][filename]["flux_plus_sensitivity"] = flux_plus_sensitivity
         # rv correction
         data_results_storage['fitted_spectra'][filename]['spectra_rv'] = spectra_rv
         # find the spectraname in fitlist_parameters
