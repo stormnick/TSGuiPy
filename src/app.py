@@ -161,6 +161,10 @@ def get_plot_fitted_result_one_star():
         flux_minus_sensitivity = data_results_storage['fitted_spectra'][specname]["flux_minus_sensitivity"]
         wavelength_plus_sensitivity = data_results_storage['fitted_spectra'][specname]["wavelength_plus_sensitivity"]
         flux_plus_sensitivity = data_results_storage['fitted_spectra'][specname]["flux_plus_sensitivity"]
+        # ew_just_line	ew_blend	ew_sensitivity
+        ew_just_line = data_results_storage['fitted_spectra'][specname]["ew_just_line"][linemask_idx]
+        ew_blend = data_results_storage['fitted_spectra'][specname]["ew_blend"][linemask_idx]
+        ew_sensitivity = data_results_storage['fitted_spectra'][specname]["ew_sensitivity"][linemask_idx]
         # apply rv correction
         rv_fitted = data_results_storage['fitted_spectra'][specname]['fitted_rv'][linemask_idx]
         wavelength_observed_rv = (apply_doppler_correction(wavelength_observed, rv_correction + rv_fitted))
@@ -180,11 +184,10 @@ def get_plot_fitted_result_one_star():
 
 
         fitted_value = data_results_storage['fitted_spectra'][specname]['fitted_value'][linemask_idx]
-        title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, "
-                 f"chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
-                 f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
-                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, vsini = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
-                 f"rv_fit = {rv_fitted:.2f}")
+        title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, rv_fit = {rv_fitted:.2f}, "
+                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, vsini = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}<br>"
+                 f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
+                 f"EW: total = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, line = {ew_just_line:.2f}, blend = {ew_blend:.2f}, sensit = {ew_sensitivity:.2f}")
         # for wavelength_fitted if difference between the points is lower than ldelta, remove any points in-between such that the difference is higher than ldelta
         # in general difference is constant
         filtered_wavelengths = [wavelength_fitted[0]]  # Start with the first element
@@ -827,6 +830,9 @@ def process_file(folder_path, processed_dict):
         data_results_storage['fitted_spectra'][filename]['rotation'] = {}
         data_results_storage['fitted_spectra'][filename]['vmic'] = {}
         data_results_storage['fitted_spectra'][filename]['Fe_H'] = {}
+        data_results_storage['fitted_spectra'][filename]['ew_just_line'] = {}
+        data_results_storage['fitted_spectra'][filename]['ew_blend'] = {}
+        data_results_storage['fitted_spectra'][filename]['ew_sensitivity'] = {}
 
         df_correct_specname_indices = output_file_df["specname"] == filename
         output_file_df_specname = output_file_df[df_correct_specname_indices]
@@ -844,6 +850,18 @@ def process_file(folder_path, processed_dict):
             data_results_storage['fitted_spectra'][filename]['rotation'][linemask_idx] = output_file_df_specname["rotation"].values[output_file_df_index]
             data_results_storage['fitted_spectra'][filename]['vmic'][linemask_idx] = output_file_df_specname["Microturb"].values[output_file_df_index]
             data_results_storage['fitted_spectra'][filename]['Fe_H'][linemask_idx] = output_file_df_specname["Fe_H"].values[output_file_df_index]
+            if "ew_just_line" in output_file_df_specname.columns:
+                data_results_storage['fitted_spectra'][filename]['ew_just_line'][linemask_idx] = output_file_df_specname["ew_just_line"].values[output_file_df_index]
+            else:
+                data_results_storage['fitted_spectra'][filename]['ew_just_line'][linemask_idx] = -999
+            if "ew_blend" in output_file_df_specname.columns:
+                data_results_storage['fitted_spectra'][filename]['ew_blend'][linemask_idx] = output_file_df_specname["ew_blend"].values[output_file_df_index]
+            else:
+                data_results_storage['fitted_spectra'][filename]['ew_blend'][linemask_idx] = -999
+            if "ew_sensitivity" in output_file_df_specname.columns:
+                data_results_storage['fitted_spectra'][filename]['ew_sensitivity'][linemask_idx] = output_file_df_specname["ew_sensitivity"].values[output_file_df_index]
+            else:
+                data_results_storage['fitted_spectra'][filename]['ew_sensitivity'][linemask_idx] = -999
 
 
 
