@@ -7,7 +7,7 @@ TSGuiPy is a GUI for [TSFitPy](https://github.com/TSFitPy-developers/TSFitPy) sp
 To install TSGuiPy, you will need to first install the TSFitPy package. You can get TSFitPy from [here](https://github.com/TSFitPy-developers/TSFitPy). Once you have installed TSFitPy, you can install TSGuiPy by cloning this repository INSIDE the TSFitPy directory:
 
 - `cd ./TSFitPy/`
-- `git clone https://github.com/TSFitPy-developers/TSFitPy.git`
+- `git clone https://github.com/stormnick/TSGuiPy.git`
 
 You will need following libraries (on top of TSFitPy dependencies) to run TSGuiPy:
 
