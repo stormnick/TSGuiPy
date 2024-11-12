@@ -208,19 +208,21 @@
             </div>
 
             <hr class="my-4">
-                    <form id="specnameChoiceForm" method="post">
+                <form id="specnameChoiceForm" method="post">
                     <select id="specname">
                         {% for option in options %}
                         <option value="{{ option }}">{{ option }}</option>
                         {% endfor %}
                     </select>
+                        <button type="button" onclick="moveUp()">Previous</button>
+                        <button type="button" onclick="moveDown()">Next</button>
                     <input class="btn btn-info" type="submit" value="Generate results">
                 </form>
-                <div id="plotsGrid"></div>
+                <div id="stellarParam">teff/logg/feh/vmic: </div>
                 <div id="meanValue">Mean Value: </div>
                 <div id="standardError">Standard error: </div>
                 <div id="countValue">Lines: </div>
-
+                <div id="plotsGrid"></div>
             <div id="plot-container"></div>
         </div>
 
@@ -244,6 +246,7 @@
             success: function(response) {
                 displayNotification("Success!", 3000, "green"); // Example: blue for processing
                 displayFigures(response.figures);
+                document.getElementById('stellarParam').textContent = 'teff/logg/feh/vmic: ' + response.stellar_param;
             },
             error: function(xhr, status, error) {
                 displayNotification("Error :(", 3000, "red"); // Example: blue for processing
@@ -370,6 +373,22 @@
         document.getElementById('meanValue').textContent = 'Mean Value: ' + meanValue.toFixed(3);
         document.getElementById('standardError').textContent = 'Standard error: ' + standardError.toFixed(3);
         document.getElementById('countValue').textContent = 'Count: ' + count;
+    }
+
+    const selectElement = document.getElementById("specname");
+
+    function moveUp() {
+        // Move up only if not at the first option
+        if (selectElement.selectedIndex > 0) {
+            selectElement.selectedIndex -= 1;
+        }
+    }
+
+    function moveDown() {
+        // Move down only if not at the last option
+        if (selectElement.selectedIndex < selectElement.options.length - 1) {
+            selectElement.selectedIndex += 1;
+        }
     }
 
     </script>

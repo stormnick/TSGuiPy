@@ -140,7 +140,12 @@ def get_plot_fitted_result_one_star():
     linelist_path = data['linelistPath']
     loggf_limit = float(data['loggf_limit'])
     figures = []
+    avg_feh = []
+    avg_vmic = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
+        avg_feh.append(data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx])
+        avg_vmic.append(data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx])
+
         center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
         left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_idx]
         right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_idx]
@@ -178,7 +183,7 @@ def get_plot_fitted_result_one_star():
         title = (f"{data_results_storage['fitted_value_label']} = {fitted_value:.2f}, EW = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, "
                  f"chisqr = {data_results_storage['fitted_spectra'][specname]['chi_squared'][linemask_idx]:.6f}<br>"
                  f"ERR = {data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx]}, WARN = {data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx]}, "
-                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, rot = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
+                 f"vmac = {data_results_storage['fitted_spectra'][specname]['vmac'][linemask_idx]:.2f}, vsini = {data_results_storage['fitted_spectra'][specname]['rotation'][linemask_idx]:.2f}, "
                  f"rv_fit = {rv_fitted:.2f}")
         # for wavelength_fitted if difference between the points is lower than ldelta, remove any points in-between such that the difference is higher than ldelta
         # in general difference is constant
@@ -203,7 +208,12 @@ def get_plot_fitted_result_one_star():
         }
         figures.append(figure_data)
 
-    return jsonify(figures=figures)
+    stellar_param_teff = data_results_storage['fitted_spectra'][specname]['teff']
+    stellar_param_logg = data_results_storage['fitted_spectra'][specname]['logg']
+    stellar_param_feh = np.average(avg_feh)
+    stellar_param_vmic = np.average(avg_vmic)
+
+    return jsonify(figures=figures, stellar_param=f"{int(stellar_param_teff)}/{stellar_param_logg:.2f}/{stellar_param_feh:.2f}/{stellar_param_vmic:.2f}")
 
 """
 ABUNDANCE DIAGRAM
@@ -304,7 +314,7 @@ def resample_spectrum(wavelengths, flux, sampling_rate_AA):
     new_wavelengths = np.arange(new_wavelength_start, new_wavelength_end, sampling_rate_AA)
 
     # Create the interpolation function
-    interp_func = scipy.interpolate.interp1d(wavelengths, flux, kind='linear', fill_value=1)
+    interp_func = scipy.interpolate.interp1d(wavelengths, flux, kind='linear', fill_value=1, bounds_error=False)
 
     # Interpolate the flux to the new wavelength grid
     new_flux = interp_func(new_wavelengths)
@@ -754,6 +764,10 @@ def process_file(folder_path, processed_dict):
         if os.path.isfile(filename_fitted_spectra_just_blend):
             wavelength_just_blend, flux_just_blend = np.loadtxt(filename_fitted_spectra_just_blend, dtype=float,
                                                                 unpack=True)
+            # sort the arrays
+            indices_sort = np.argsort(wavelength_just_blend)
+            wavelength_just_blend = wavelength_just_blend[indices_sort]
+            flux_just_blend = flux_just_blend[indices_sort]
         else:
             wavelength_just_blend, flux_just_blend = np.array([]), np.array([])
         wavelength_just_blend, flux_just_blend = list(wavelength_just_blend), list(flux_just_blend)
@@ -761,6 +775,10 @@ def process_file(folder_path, processed_dict):
         if os.path.isfile(filename_fitted_spectra_minus_sensitivity):
             wavelength_minus_sensitivity, flux_minus_sensitivity = np.loadtxt(filename_fitted_spectra_minus_sensitivity,
                                                                               dtype=float, unpack=True)
+            # sort the arrays
+            indices_sort = np.argsort(wavelength_minus_sensitivity)
+            wavelength_minus_sensitivity = wavelength_minus_sensitivity[indices_sort]
+            flux_minus_sensitivity = flux_minus_sensitivity[indices_sort]
         else:
             wavelength_minus_sensitivity, flux_minus_sensitivity = np.array([]), np.array([])
         wavelength_minus_sensitivity, flux_minus_sensitivity = list(wavelength_minus_sensitivity), list(flux_minus_sensitivity)
@@ -768,6 +786,10 @@ def process_file(folder_path, processed_dict):
         if os.path.isfile(filename_fitted_spectra_plus_sensitivity):
             wavelength_plus_sensitivity, flux_plus_sensitivity = np.loadtxt(filename_fitted_spectra_plus_sensitivity,
                                                                             dtype=float, unpack=True)
+            # sort the arrays
+            indices_sort = np.argsort(wavelength_plus_sensitivity)
+            wavelength_plus_sensitivity = wavelength_plus_sensitivity[indices_sort]
+            flux_plus_sensitivity = flux_plus_sensitivity[indices_sort]
         else:
             wavelength_plus_sensitivity, flux_plus_sensitivity = np.array([]), np.array([])
         wavelength_plus_sensitivity, flux_plus_sensitivity = list(wavelength_plus_sensitivity), list(flux_plus_sensitivity)
