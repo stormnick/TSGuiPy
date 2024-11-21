@@ -366,14 +366,19 @@ def get_plot_synthetic_spectrum():
             element_abundances[element_name] = float(abundance)
 
     if code_type.lower() == 'm3d':
-        wavelength, flux, parsed_linelist_dict = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+        wavelength, flux, parsed_linelist_info = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
                                                           nlte_iter, element_abundances, vmac, rotation, resolution,
                                                           loggf_limit=loggf_limit, linelist_path=linelist_path)
     elif code_type.lower() == 'ts':
-        wavelength, flux, parsed_linelist_dict = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+        wavelength, flux, parsed_linelist_info = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
                                                           element_abundances, vmac, rotation, resolution,
                                                           loggf_limit=loggf_limit, linelist_path=linelist_path,
                                                           synthesise_molecules=synthesise_molecules)
+
+    parsed_linelist_dict = []
+    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf,
+                                     "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
 
     wavelength = np.asarray(wavelength)
     flux = np.asarray(flux)
@@ -483,13 +488,7 @@ def call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, nlte_iter,
                                                       return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit,
                                                       plot_output=False)
 
-    parsed_linelist_dict = []
-    #parsed_linelist_data = [(123, "fe1", 0.5), (456, "fe2", 0.7)]
-    # redo parsed_linelist_data as a list, where each element is a dictionary, where first element is the wavelength, second is the element name, third is the loggf
-    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
-        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf, "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
-
-    return list(wavelength), list(norm_flux), parsed_linelist_dict
+    return list(wavelength), list(norm_flux), parsed_linelist_info
 
 def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundances: dict, vmac, rotation, resolution, linelist_path=None, loggf_limit=None, synthesise_molecules=False):
     if linelist_path is None:
@@ -511,11 +510,11 @@ def call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element, xfeabundanc
     element_abundances = xfeabundances
     # convert xfeabundances to dictionary. first number is the element number in periodic table, second is the abundance. the separation between elements is \n
 
-    wavelength, norm_flux = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
+    wavelength, norm_flux, parsed_linelist_dict = plot_synthetic_data(ts_paths, teff, logg, feh, vmic, lmin, lmax, ldelta,
                                                 atmosphere_type, nlte_flag, element_in_nlte, element_abundances, synthesise_molecules,
-                                                verbose=False, macro=vmac, resolution=resolution, rotation=rotation, do_matplotlib_plot=False)
+                                                verbose=False, macro=vmac, resolution=resolution, rotation=rotation, do_matplotlib_plot=False,
+                                                return_parsed_linelist=True, loggf_limit_parsed_linelist=loggf_limit)
 
-    parsed_linelist_dict = []
     return list(wavelength), list(norm_flux), parsed_linelist_dict
 
 
@@ -867,5 +866,5 @@ def process_file(folder_path, processed_dict):
 
 if __name__ == '__main__':
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)
     #generate_synthetic_spectrum()
