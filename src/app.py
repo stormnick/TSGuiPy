@@ -14,18 +14,20 @@ import tempfile
 import zipfile
 import numpy as np
 import plotly
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from TSGuiPy.src import plot
 from plotting_tools.scripts_for_plotting import plot_synthetic_data_m3dis, load_output_data, plot_synthetic_data, get_just_parsed_linelist
 from scripts.auxiliary_functions import apply_doppler_correction, calculate_equivalent_width
 from scripts.solar_abundances import periodic_table
+import io
+import csv
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
 data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {},
-                        "observed_spectra_synthetic": {}}
+                        "observed_spectra_synthetic": {}, "synthetic_spectra": {"wavelength": [], "flux": []}}
 
 CONFIG_WITH_DEFAULT_PATHS = "default_paths.cfg"
 default_paths = configparser.ConfigParser()
@@ -402,8 +404,52 @@ def get_plot_synthetic_spectrum():
     else:
         wavelength_observed, flux_observed = [], []
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
+    data_results_storage['synthetic_spectra']["wavelength"] = list(wavelength)
+    data_results_storage['synthetic_spectra']["flux"] = list(flux)
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
 
+@app.route('/download_data', methods=['POST'])
+def download_data():
+    data = request.form.get('data')
+    data = json.loads(data)
+    teff = int(data.get('teff'))
+    logg = round(float(data.get('logg')), 2)
+    feh = round(float(data.get('feh')), 2)
+    #vmic = round(float(data.get('vmic')), 2)
+    #lmin = float(data.get('lmin'))
+    #lmax = float(data.get('lmax'))
+    #ldelta = float(data.get('deltal'))
+    ##nlte_element = data['nlte_element']
+    ##nlte_iter = int(data['nlte_iter'])
+    ##xfeabundances = data['m3d_xfeabundances']
+    #vmac = float(data.get('vmac'))
+    #resolution = float(data.get('resolution'))
+    #rotation = float(data.get('rotation'))
+    ##obs_rv = float(data['obs_rv'])
+    ##loggf_limit = float(data['loggf_limit'])
+    ##linelist_path = data['linelist_path']
+    #code_type = data.get('code_type')
+    #synthesise_molecules = data.get('synthesiseMolecules')
+    #snr = float(data.get('snr'))
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['wavelength', 'norm_flux'])  # Header row
+    # "synthetic_spectra": {"wavelength": [], "flux": []}
+    wavelength = data_results_storage['synthetic_spectra']["wavelength"]
+    flux = data_results_storage['synthetic_spectra']["flux"]
+    # cut to 4 and 6 decimal places
+    wavelength = [f"{wavelength[i]:.4f}" for i in range(len(wavelength))]
+    flux = [f"{flux[i]:.6f}" for i in range(len(flux))]
+    #writer.writerow(f"#teff={teff}, logg={logg}, feh={feh}, vmic={vmic}, lmin={lmin}, lmax={lmax}, ldelta={ldelta}, vmac={vmac}, resolution={resolution}, rotation={rotation}, code_type={code_type}, synthesise_molecules={synthesise_molecules}, snr={snr}".split(","))
+    writer.writerows(zip(wavelength, flux))
+    csv_data = output.getvalue()
+    output.close()
+
+    response = make_response(csv_data)
+    response.headers['Content-Disposition'] = f'attachment; filename=synthetic_spectra_{teff}_{logg}_{feh}.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    return response
 
 """
 PLOT OBSERVED SPECTRA

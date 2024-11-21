@@ -175,6 +175,37 @@
     });
     }
 
+    function downloadData2() {
+
+    const requestData = {
+        teff: document.getElementById("m3d_teff").value,
+        logg: document.getElementById("m3d_logg").value,
+        feh: document.getElementById("m3d_feh").value,
+        vmic: document.getElementById("m3d_vmic").value,
+        lmin: document.getElementById("m3d_lmin").value,
+        lmax: document.getElementById("m3d_lmax").value,
+        deltal: document.getElementById("m3d_deltal").value,
+        nlte_element: document.getElementById("m3d_nlte_element").value,
+        nlte_iter: document.getElementById("m3d_nlte_iter").value,
+        m3d_xfeabundances: document.getElementById("m3d_xfeabundances").value,
+        vmac: document.getElementById("m3d_vmac").value,
+        resolution: document.getElementById("m3d_resolution").value,
+        rotation: document.getElementById("m3d_rotation").value,
+        obs_rv: document.getElementById("obs_rv").value,
+        loggf_limit: document.getElementById("m3d_loggf_limit").value,
+        linelist_path: document.getElementById("m3d_linelist").value,
+        code_type: document.getElementById("code_type").value,
+        synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
+        snr: document.getElementById("m3d_snr").value
+    };
+
+        // Set the hidden input value to the JSON string
+        document.getElementById('hiddenData').value = JSON.stringify(requestData);
+
+        // Submit the form
+        document.getElementById('downloadForm').submit();
+    }
+
     $(document).ready(function() {
     $('#uploadForm').on('submit', function(e) {
         displayNotification("Uploading...", 3000, "blue"); // Example: blue for processing
@@ -538,6 +569,13 @@
             <div id="integral_observed"></div>
             <div id="columns"></div>
             <div id="plot-container"></div>
+            <form id="downloadForm" method="POST" action="/download_data" style="display: none;">
+                <input type="hidden" name="data" id="hiddenData">
+            </form>
+            <br>
+            <div class="col-md-4">
+                <button class="btn btn-primary" onclick="downloadData2()">Download Spectra</button>
+            </div>
         </div>
 
     </div>
