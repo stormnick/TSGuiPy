@@ -4,6 +4,7 @@ import sys
 import os
 
 import scipy
+from alembic.command import current
 
 # This is a workaround to add the parent directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',)))
@@ -21,18 +22,21 @@ from scripts.auxiliary_functions import apply_doppler_correction, calculate_equi
 from scripts.solar_abundances import periodic_table
 import io
 import csv
+import pandas as pd
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
 data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {},
-                        "observed_spectra_synthetic": {}, "synthetic_spectra": {"wavelength": [], "flux": []}}
+                        "observed_spectra_synthetic": {}, "synthetic_spectra": {"wavelength": [], "flux": []},
+                        "currently_plotted_spectra": None}
 
 CONFIG_WITH_DEFAULT_PATHS = "default_paths.cfg"
 default_paths = configparser.ConfigParser()
 default_paths.read(CONFIG_WITH_DEFAULT_PATHS)
 default_paths = default_paths["PathsToTheCodes"]
+default_name_new_flags = "new_flags.csv"
 
 """
 HOME PAGE
@@ -141,14 +145,58 @@ def get_plot_fitted_result_one_star():
     overplot_synthetic_data = data['overplotBlendsCheck']
     linelist_path = data['linelistPath']
     loggf_limit = float(data['loggf_limit'])
+    includeWarnings = data['includeWarnings']
+    auto_save_new_errors = data['autoSaveNewErrors']
+    prev_spectra_checked_boxes = data['checkedBoxes']
+
+    file_new_errors = os.path.join("./", default_name_new_flags)
+    if os.path.exists(file_new_errors):
+        current_new_errors = pd.read_csv(file_new_errors)
+    else:
+        current_new_errors = pd.DataFrame(columns=["specname", "linemask", "extra_error"])
+
+    prev_spectra_name = data_results_storage['currently_plotted_spectra']
+    if auto_save_new_errors and prev_spectra_name is not None:
+        for one_linemask in prev_spectra_checked_boxes:
+            wavelength = one_linemask['id']
+            if wavelength != "checkbox0":
+                checked = one_linemask['checked']
+                if not checked:
+                    extra_error_value = 1
+                else:
+                    extra_error_value = 0
+                # Check if a row with the same "specname" and "linemask" exists
+                mask = (
+                    (current_new_errors['specname'] == prev_spectra_name) &
+                    (current_new_errors['linemask'].astype(str) == wavelength)
+                )
+
+                if mask.any():
+                    # Update 'extra_error' in the existing row(s)
+                    current_new_errors.loc[mask, 'extra_error'] = extra_error_value
+                else:
+                    # Append a new row as before
+                    current_new_errors.loc[len(current_new_errors)] = {
+                        "specname": prev_spectra_name,
+                        "linemask": wavelength,
+                        "extra_error": extra_error_value
+                    }
+
+        current_new_errors.to_csv(file_new_errors, index=False)
+
+    data_results_storage['currently_plotted_spectra'] = specname
+
     figures = []
     avg_feh = []
     avg_vmic = []
+    checked_boxes = []
+    center_wavelengths_all = []
     for linemask_idx, linemask_center_wavelength in enumerate(data_results_storage["linemask_center_wavelengths"]):
         avg_feh.append(data_results_storage['fitted_spectra'][specname]['Fe_H'][linemask_idx])
         avg_vmic.append(data_results_storage['fitted_spectra'][specname]['vmic'][linemask_idx])
 
         center_wavelengths = data_results_storage["linemask_center_wavelengths"][linemask_idx]
+        center_wavelengths_all.append(center_wavelengths)
         left_wavelengths = data_results_storage["linemask_left_wavelengths"][linemask_idx]
         right_wavelengths = data_results_storage["linemask_right_wavelengths"][linemask_idx]
         # load spectra
@@ -192,15 +240,8 @@ def get_plot_fitted_result_one_star():
                  f"EW: total = {data_results_storage['fitted_spectra'][specname]['ew'][linemask_idx]:.2f}, line = {ew_just_line:.2f}, blend = {ew_blend:.2f}, sensit = {ew_sensitivity:.2f}")
         # for wavelength_fitted if difference between the points is lower than ldelta, remove any points in-between such that the difference is higher than ldelta
         # in general difference is constant
-        filtered_wavelengths = [wavelength_fitted[0]]  # Start with the first element
-        filtered_flux = [flux_fitted[0]]
-        ldelta_plotted_synthetic = 0.0075
-
-        for i in range(1, len(wavelength_fitted)):
-            # Check if the current point should be added:
-            if abs(wavelength_fitted[i] - filtered_wavelengths[-1]) > ldelta_plotted_synthetic:
-                filtered_wavelengths.append(wavelength_fitted[i])
-                filtered_flux.append(flux_fitted[i])
+        filtered_wavelengths = wavelength_fitted # Start with the first element
+        filtered_flux = flux_fitted
 
         fig = plot.create_plot_data_one_star(np.asarray(filtered_wavelengths), np.asarray(filtered_flux), wavelength_observed_rv,
                                              flux_observed, left_wavelengths, right_wavelengths, center_wavelengths, title, wavelength_just_blend,
@@ -213,12 +254,33 @@ def get_plot_fitted_result_one_star():
         }
         figures.append(figure_data)
 
+        mask = (
+                (current_new_errors['specname'] == specname) &
+                (current_new_errors['linemask'].astype(str) == str(center_wavelengths))
+        )
+
+        if mask.any():
+            extra_error_value = current_new_errors.loc[mask, 'extra_error'].values[0]
+        else:
+            extra_error_value = 0
+
+        if extra_error_value == 0:
+            if data_results_storage['fitted_spectra'][specname]['flag_error'][linemask_idx] != 0:
+                checked_boxes.append(False)
+            elif data_results_storage['fitted_spectra'][specname]['flag_warning'][linemask_idx] != 0 and not includeWarnings:
+                checked_boxes.append(False)
+            else:
+                checked_boxes.append(True)
+        else:
+            checked_boxes.append(False)
+
     stellar_param_teff = data_results_storage['fitted_spectra'][specname]['teff']
     stellar_param_logg = data_results_storage['fitted_spectra'][specname]['logg']
     stellar_param_feh = np.average(avg_feh)
     stellar_param_vmic = np.average(avg_vmic)
 
-    return jsonify(figures=figures, stellar_param=f"{int(stellar_param_teff)}/{stellar_param_logg:.2f}/{stellar_param_feh:.2f}/{stellar_param_vmic:.2f}")
+    return jsonify(figures=figures, stellar_param=f"{int(stellar_param_teff)}/{stellar_param_logg:.2f}/{stellar_param_feh:.2f}/{stellar_param_vmic:.2f}",
+                   checked_boxes=checked_boxes, center_wavelengths_all=center_wavelengths_all)
 
 """
 ABUNDANCE DIAGRAM

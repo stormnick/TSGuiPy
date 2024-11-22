@@ -159,31 +159,6 @@
                 <input type="submit" value="Upload .zip file with the results">
             </form>
             <hr class="my-4">
-            <!--
-            <div class="row form-group">
-                <div class="col-md-8">
-                Options for overplotting blends!! (calls spectral synthesise, so takes time):
-                </div>
-                </div>
-                <div class="row form-group">
-            <div class="col-md-2">
-                <label for="code_type">M3D/TS:</label>
-            </div>
-            <div class="col-md-2">
-                    <select class="form-control" id="code_type" name="code_type" value="TS">
-                        <option>TS</option>
-                        <option>M3D</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="synthesiseMolecules">Include molecules (slow!):</label>
-                </div>
-                <div class="col-md-2">
-                    <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
-                </div>
-            </div>
-            -->
-
             <div class="row form-group">
                 <div class="col-md-2">
                     <label for="overplotBlendsCheck">Overplot blends:</label>
@@ -204,6 +179,20 @@
                 </div>
                 <div class="col-md-6">
                     <input type="text" class="form-control" id="m3d_linelist" name="m3d_linelist" value="../../input_files/linelists/linelist_for_fitting/">
+                </div>
+            </div>
+            <div class="row form-group">
+                <div class="col-md-4">
+                    <label for="includeWarnings">Include warnings in mean calculation:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="includeWarnings" name="includeWarnings" checked>
+                </div>
+                <div class="col-md-4">
+                    <label for="autoSaveNewErrors">Auto save new errors:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="autoSaveNewErrors" name="autoSaveNewErrors">
                 </div>
             </div>
 
@@ -229,12 +218,30 @@
     </div>
 
     <script>
+    function getCheckboxValues() {
+        const checkboxValues = [];
+        const checkboxes = document.querySelectorAll('.figure-checkbox');
+        checkboxes.forEach((checkbox) => {
+            checkboxValues.push({
+                id: checkbox.id,
+                checked: checkbox.checked
+            });
+        });
+        return checkboxValues;
+    }
+
+
     function plot_fitted_result_one_star() {
+        const checked_boxes_send = getCheckboxValues();
+
         const requestData = {
             specname: document.getElementById("specname").value,
             overplotBlendsCheck: document.getElementById("overplotBlendsCheck").checked,
             linelistPath: document.getElementById("m3d_linelist").value,
-            loggf_limit: document.getElementById("m3d_loggf_limit").value
+            loggf_limit: document.getElementById("m3d_loggf_limit").value,
+            includeWarnings: document.getElementById("includeWarnings").checked,
+            autoSaveNewErrors: document.getElementById("autoSaveNewErrors").checked,
+            checkedBoxes: checked_boxes_send
         };
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
         // Send AJAX request to Flask to generate plots
@@ -245,7 +252,7 @@
             data: JSON.stringify(requestData),
             success: function(response) {
                 displayNotification("Success!", 3000, "green"); // Example: blue for processing
-                displayFigures(response.figures);
+                displayFigures(response.figures, response.checked_boxes, response.center_wavelengths_all);
                 document.getElementById('stellarParam').textContent = 'teff/logg/feh/vmic: ' + response.stellar_param;
             },
             error: function(xhr, status, error) {
@@ -254,7 +261,7 @@
         });
     };
 
-    function displayFigures(figures) {
+    function displayFigures(figures, checked_boxes, center_wavelengths_all) {
         const plotsGrid = document.getElementById('plotsGrid');
         plotsGrid.innerHTML = ''; // Clear existing content
         figures.forEach((figData, index) => {
@@ -263,9 +270,10 @@
             const checkbox = document.createElement('input');
             const columnsContainer = document.createElement('div');
             checkbox.type = 'checkbox';
-            checkbox.id = 'checkbox' + index;
+            checkbox.id = center_wavelengths_all[index];
             checkbox.setAttribute('data-value', figData.value);
-            checkbox.checked = true; // Set the checkbox to be checked initially
+            checkbox.checked = checked_boxes[index];
+            checkbox.classList.add('figure-checkbox'); // Add the common class here
             checkbox.addEventListener('change', () => updateMeanValue(figures));
 
             Plotly.newPlot(plotContainer, JSON.parse(figData.figure));
