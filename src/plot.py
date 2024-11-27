@@ -71,8 +71,11 @@ def plot_observed_spectra(x_fitted, y_fitted, x_lines=None, y_lines=None):
     )
     return fig
 
-def plot_abundance_plot(x_values, y_values, x_label, y_label, title):
-    trace = go.Scatter(x=x_values, y=y_values, mode='markers', marker=dict(color='black'), name='Fitted')
+def plot_abundance_plot(x_values, y_values, labels, x_label, y_label, title):
+    trace = go.Scatter(x=x_values, y=y_values, mode='markers', marker=dict(color='black'), name='Fitted',
+    text=labels,  # Add the labels here
+    hoverinfo='text+x+y'  # Display labels along with x and y values on hover
+    )
     layout = go.Layout(title=title)
     fig = go.Figure(data=[trace], layout=layout)
     fig.update_layout(
@@ -107,10 +110,16 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
                                    showlegend=False)
     # plot the synthetic data as a line but with alpha=0.5 and grey colour
     if wavelength_synthetic and flux_synthetic:
+        # cut between left_line - 0.2 and right_line + 0.2
+        wavelength_synthetic, flux_synthetic = cut_ranges(wavelength_synthetic, flux_synthetic, left_line, right_line)
         trace_synthetic = go.Scatter(x=wavelength_synthetic, y=flux_synthetic, mode='lines', line=dict(color='grey'), opacity=0.4, name='blends')
     if wavelength_synt_extra1 and flux_synt_extra1:
+        wavelength_synt_extra1, flux_synt_extra1 = cut_ranges(wavelength_synt_extra1, flux_synt_extra1, left_line,
+                                                              right_line)
         trace_synthetic_extra1 = go.Scatter(x=wavelength_synt_extra1, y=flux_synt_extra1, mode='lines', line=dict(color='teal'), opacity=0.4, name='increased A(X)')
     if wavelength_synt_extra2 and flux_synt_extra2:
+        wavelength_synt_extra2, flux_synt_extra2 = cut_ranges(wavelength_synt_extra2, flux_synt_extra2, left_line,
+                                                              right_line)
         trace_synthetic_extra2 = go.Scatter(x=wavelength_synt_extra2, y=flux_synt_extra2, mode='lines', line=dict(color='teal'), opacity=0.4, name='decreased A(X)')
 
     # xlimit is the range of x values to plot
@@ -136,3 +145,14 @@ def create_plot_data_one_star(x_fitted, y_fitted, x_obs, y_obs, left_line, right
         yaxis_title="Normalised Flux"
     )
     return fig
+
+
+def cut_ranges(wavelength_synthetic, flux_synthetic, left_line, right_line):
+    wavelength_synthetic = np.array(wavelength_synthetic)
+    flux_synthetic = np.array(flux_synthetic)
+    mask = (wavelength_synthetic >= left_line - 0.2) & (wavelength_synthetic <= right_line + 0.2)
+    wavelength_synthetic = wavelength_synthetic[mask]
+    flux_synthetic = flux_synthetic[mask]
+    wavelength_synthetic = wavelength_synthetic.tolist()
+    flux_synthetic = flux_synthetic.tolist()
+    return wavelength_synthetic, flux_synthetic

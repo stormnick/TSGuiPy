@@ -343,6 +343,7 @@ def plot_abundance_diagram():
     # get the data from the fitted spectra
     x_values = []
     y_values = []
+    labels = []
 
     # so we want to get average of the fitted value for each specname, within the chisqr_limit and without errors and warnings
     for specname in specnames:
@@ -370,10 +371,11 @@ def plot_abundance_diagram():
 
             x_values.append(np.average(x_value_temp))
             y_values.append(np.average(y_value_temp))
+            labels.append(specname)
 
     fitted_element_name = data_results_storage['fitted_value_label']
 
-    fig = plot.plot_abundance_plot(x_values, y_values, f"[Fe/H]", fitted_element_name, f"Abundance Diagram, stars: {len(x_values)}")
+    fig = plot.plot_abundance_plot(x_values, y_values, labels, f"[Fe/H]", fitted_element_name, f"Abundance Diagram, stars: {len(x_values)}")
     return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"]})
 
 
