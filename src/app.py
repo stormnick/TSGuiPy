@@ -4,7 +4,6 @@ import sys
 import os
 
 import scipy
-from alembic.command import current
 
 # This is a workaround to add the parent directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',)))
@@ -25,7 +24,7 @@ import csv
 import pandas as pd
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 50 Megabytes
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024 * 20  # 50 Megabytes
 
 DEFAULT_CONFIG_PATH = 'default_config.cfg'
 data_results_storage = {'fitted_spectra': [], "options": [], "linemask_center_wavelengths": [], "observed_spectra": {},
@@ -146,7 +145,7 @@ def get_plot_fitted_result_one_star():
     linelist_path = data['linelistPath']
     loggf_limit = float(data['loggf_limit'])
     includeWarnings = data['includeWarnings']
-    auto_save_new_errors = data['autoSaveNewErrors']
+    auto_save_new_errors = True
     prev_spectra_checked_boxes = data['checkedBoxes']
 
     file_new_errors = os.path.join("./", default_name_new_flags)
@@ -155,34 +154,7 @@ def get_plot_fitted_result_one_star():
     else:
         current_new_errors = pd.DataFrame(columns=["specname", "linemask", "extra_error"])
 
-    prev_spectra_name = data_results_storage['currently_plotted_spectra']
-    if auto_save_new_errors and prev_spectra_name is not None:
-        for one_linemask in prev_spectra_checked_boxes:
-            wavelength = one_linemask['id']
-            if wavelength != "checkbox0":
-                checked = one_linemask['checked']
-                if not checked:
-                    extra_error_value = 1
-                else:
-                    extra_error_value = 0
-                # Check if a row with the same "specname" and "linemask" exists
-                mask = (
-                    (current_new_errors['specname'] == prev_spectra_name) &
-                    (current_new_errors['linemask'].astype(str) == wavelength)
-                )
-
-                if mask.any():
-                    # Update 'extra_error' in the existing row(s)
-                    current_new_errors.loc[mask, 'extra_error'] = extra_error_value
-                else:
-                    # Append a new row as before
-                    current_new_errors.loc[len(current_new_errors)] = {
-                        "specname": prev_spectra_name,
-                        "linemask": wavelength,
-                        "extra_error": extra_error_value
-                    }
-
-        current_new_errors.to_csv(file_new_errors, index=False)
+    save_current_flags(file_new_errors, prev_spectra_checked_boxes, current_new_errors, auto_save_new_errors)
 
     data_results_storage['currently_plotted_spectra'] = specname
 
@@ -281,6 +253,75 @@ def get_plot_fitted_result_one_star():
 
     return jsonify(figures=figures, stellar_param=f"{int(stellar_param_teff)}/{stellar_param_logg:.2f}/{stellar_param_feh:.2f}/{stellar_param_vmic:.2f}",
                    checked_boxes=checked_boxes, center_wavelengths_all=center_wavelengths_all)
+
+
+def save_current_flags(file_new_errors, prev_spectra_checked_boxes, current_new_errors, auto_save_new_errors):
+    prev_spectra_name = data_results_storage['currently_plotted_spectra']
+    if auto_save_new_errors and prev_spectra_name is not None:
+        for one_linemask in prev_spectra_checked_boxes:
+            id = int(one_linemask['id'].replace("checkbox", ""))
+            wavelength = data_results_storage["linemask_center_wavelengths"][id]
+            checked = one_linemask['checked']
+            if not checked:
+                extra_error_value = 1
+            else:
+                extra_error_value = 0
+            # Check if a row with the same "specname" and "linemask" exists
+            mask = (
+                    (current_new_errors['specname'] == prev_spectra_name) &
+                    (current_new_errors['linemask'].astype(str) == str(wavelength))
+            )
+
+            if mask.any():
+                # Update 'extra_error' in the existing row(s)
+                current_new_errors.loc[mask, 'extra_error'] = extra_error_value
+            else:
+                # Append a new row as before
+                current_new_errors.loc[len(current_new_errors)] = {
+                    "specname": prev_spectra_name,
+                    "linemask": wavelength,
+                    "extra_error": extra_error_value
+                }
+
+        current_new_errors.to_csv(file_new_errors, index=False)
+
+
+@app.route('/download_new_flags', methods=['POST'])
+def download_new_flags():
+    file_new_errors = os.path.join("./", default_name_new_flags)
+    if os.path.exists(file_new_errors):
+        current_new_errors = pd.read_csv(file_new_errors)
+    else:
+        current_new_errors = pd.DataFrame(columns=["specname", "linemask", "extra_error"])
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(current_new_errors.columns)
+    for index, row in current_new_errors.iterrows():
+        writer.writerow(row)
+    csv_data = output.getvalue()
+    output.close()
+
+    response = make_response(csv_data)
+    response.headers['Content-Disposition'] = f'attachment; filename=new_flags.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    return response
+
+
+@app.route('/save_new_flags', methods=['POST'])
+def save_new_flags():
+    data = request.json
+
+    prev_spectra_checked_boxes = data['checkedBoxes']
+
+    file_new_errors = os.path.join("./", default_name_new_flags)
+    if os.path.exists(file_new_errors):
+        current_new_errors = pd.read_csv(file_new_errors)
+    else:
+        current_new_errors = pd.DataFrame(columns=["specname", "linemask", "extra_error"])
+
+    save_current_flags(file_new_errors, prev_spectra_checked_boxes, current_new_errors, True)
+    return "True"
 
 """
 ABUNDANCE DIAGRAM
@@ -692,9 +733,17 @@ def upload_zipped_file():
             file_path = os.path.join(temp_dir, filename)
             file.save(file_path)
             extract_and_process_zip(file_path)
+        create_newflags_file()
         return jsonify({'message': 'Upload successful', 'status': 'success'})
     else:
         return jsonify({'message': 'Not zip', 'status': 'error'})
+
+
+def create_newflags_file():
+    file_new_errors = os.path.join("./", default_name_new_flags)
+    current_new_errors = pd.DataFrame(columns=["specname", "linemask", "extra_error"])
+    current_new_errors.to_csv(file_new_errors, index=False)
+
 
 def extract_and_process_zip(zip_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -740,6 +789,7 @@ def upload_folder():
     #options = data_results_storage["options"]
     # Optionally, clean up by deleting the temporary files
     # now route to analyse_results
+    create_newflags_file()
     return jsonify({'message': 'Upload successful', 'status': 'success'})
 
 @app.route('/upload_observed_spectra', methods=['POST'])
@@ -974,5 +1024,5 @@ def process_file(folder_path, processed_dict):
 
 if __name__ == '__main__':
 
-    app.run(debug=True, port=5002)
+    app.run(debug=True, port=5001)
     #generate_synthetic_spectrum()

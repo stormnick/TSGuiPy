@@ -18,7 +18,6 @@
             background-color: #4CAF50;
             color: white;
             padding: 0.5rem 1.5rem;
-            margin: 0.5rem;
             border: none;
             border-radius: 0.3rem;
             cursor: pointer;
@@ -57,6 +56,7 @@
                 contentType: false, // Tell jQuery not to set contentType
                 success: function(response) {
                     console.log('Upload successful');
+                    location.reload();
                     // Handle success
                     displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
                 },
@@ -83,6 +83,7 @@
                 contentType: false, // Tell jQuery not to set contentType
                 success: function(response) {
                     console.log('Upload successful');
+                    location.reload();
                     // Handle success
                     displayNotification("Upload success!", 3000, "green"); // Example: blue for processing
                 },
@@ -105,6 +106,15 @@
         setTimeout(function() {
             notification.style.display = "none";
         }, duration);
+    }
+
+    function downloadNewFlags() {
+
+        // Set the hidden input value to the JSON string
+        //document.getElementById('hiddenData').value = JSON.stringify(requestData);
+
+        // Submit the form
+        document.getElementById('downloadForm').submit();
     }
 
     </script>
@@ -188,12 +198,15 @@
                 <div class="col-md-2">
                     <input type="checkbox" class="form-check-input" id="includeWarnings" name="includeWarnings" checked>
                 </div>
-                <div class="col-md-4">
-                    <label for="autoSaveNewErrors">Auto save new errors:</label>
+                <div class="col-md-3">
+                    <button class="btn btn-custom" onclick="save_new_flags()">Save current flags</button>
                 </div>
-                <div class="col-md-2">
-                    <input type="checkbox" class="form-check-input" id="autoSaveNewErrors" name="autoSaveNewErrors">
+                <div class="col-md-3">
+                    <button class="btn btn-primary" onclick="downloadNewFlags()">Download new flags</button>
                 </div>
+                <form id="downloadForm" method="POST" action="/download_new_flags" style="display: none;">
+                    <input type="hidden" name="data" id="hiddenData">
+                </form>
             </div>
 
             <hr class="my-4">
@@ -231,6 +244,29 @@
     }
 
 
+    function save_new_flags() {
+        const checked_boxes_send = getCheckboxValues();
+
+        const requestData = {
+            checkedBoxes: checked_boxes_send
+        };
+        displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
+        // Send AJAX request to Flask to generate plots
+        $.ajax({
+            url: '/save_new_flags',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(requestData),
+            success: function(response) {
+                displayNotification("Success!", 3000, "green"); // Example: blue for processing
+            },
+            error: function(xhr, status, error) {
+                displayNotification("Error :(", 3000, "red"); // Example: blue for processing
+            }
+        });
+    };
+
+
     function plot_fitted_result_one_star() {
         const checked_boxes_send = getCheckboxValues();
 
@@ -240,7 +276,6 @@
             linelistPath: document.getElementById("m3d_linelist").value,
             loggf_limit: document.getElementById("m3d_loggf_limit").value,
             includeWarnings: document.getElementById("includeWarnings").checked,
-            autoSaveNewErrors: document.getElementById("autoSaveNewErrors").checked,
             checkedBoxes: checked_boxes_send
         };
         displayNotification("Processing...", 3000, "blue"); // Example: blue for processing
@@ -270,7 +305,7 @@
             const checkbox = document.createElement('input');
             const columnsContainer = document.createElement('div');
             checkbox.type = 'checkbox';
-            checkbox.id = center_wavelengths_all[index];
+            checkbox.id = 'checkbox' + index;
             checkbox.setAttribute('data-value', figData.value);
             checkbox.checked = checked_boxes[index];
             checkbox.classList.add('figure-checkbox'); // Add the common class here
