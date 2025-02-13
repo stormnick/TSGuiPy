@@ -557,6 +557,14 @@ def download_data():
     return response
 
 """
+MINI FIT SPECTRUM
+"""
+
+@app.route('/mini_fit')
+def render_html_mini_fit():
+    return render_template('mini_fit.html')
+
+"""
 PLOT OBSERVED SPECTRA
 """
 
