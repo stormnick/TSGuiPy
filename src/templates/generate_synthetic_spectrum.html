@@ -378,6 +378,51 @@
 }
 
 
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const form = document.getElementById("myForm");
+      const resetBtn = document.getElementById("resetBtn");
+
+      // 1) Load saved values
+      Array.from(form.elements).forEach(el => {
+        // We'll use the element's `id` as the key in localStorage
+        if (!el.id) return; // skip if no id
+
+        const savedValue = localStorage.getItem(el.id);
+        if (savedValue !== null) {
+          // Set element value based on type
+          if (el.type === "checkbox") {
+            // For a checkbox, savedValue is "true" or "false"
+            el.checked = JSON.parse(savedValue);
+          } else {
+            el.value = savedValue;
+          }
+        }
+      });
+
+      // 2) On change, save new values
+      form.addEventListener("input", function(e) {
+        const el = e.target;
+        if (!el.id) return;
+
+        if (el.type === "checkbox") {
+          localStorage.setItem(el.id, el.checked);
+        } else {
+          localStorage.setItem(el.id, el.value);
+        }
+      });
+
+      // 3) Reset button - clears localStorage for all fields, sets defaults
+      resetBtn.addEventListener("click", function() {
+        Array.from(form.elements).forEach(el => {
+          if (!el.id) return;
+          // Remove from localStorage
+          localStorage.removeItem(el.id);
+        });
+        form.reset();
+      });
+    });
+
   document.addEventListener('DOMContentLoaded', function() {
     const selectEl = document.getElementById('code_type');
     const tsFields = document.getElementById('tsFields');
@@ -387,24 +432,26 @@
 
     function toggleFields() {
       if (selectEl.value === 'TS') {
-        tsFields.style.display = 'flex';   // or 'block', depending on your layout
-        tsFields2.style.display = 'flex';  // or 'block', depending on your layout
+        tsFields.style.display = 'block';   // or 'block', depending on your layout
+        tsFields2.style.display = 'block';  // or 'block', depending on your layout
         m3dFields.style.display = 'none';
         m3dFields2.style.display = 'none';
       } else {
         tsFields.style.display = 'none';
         tsFields2.style.display = 'none';
-        m3dFields.style.display = 'flex';
-        m3dFields2.style.display = 'flex';
+        m3dFields.style.display = 'block';
+        m3dFields2.style.display = 'block';
       }
     }
 
     // Trigger the toggle once on page load (in case TS is default)
     toggleFields();
+    console.log(selectEl.value)
 
     // Toggle on change
     selectEl.addEventListener('change', toggleFields);
   });
+
 </script>
 </head>
 <body>
@@ -476,12 +523,16 @@
                         <div class="col-8">
                         </div>
                         <div class="col-4"> <!-- Adjust the size as needed -->
-                            <button class="btn btn-danger" onclick="deleteSpectra()">Delete_observed_spectrum</button>
+                            <button class="btn btn-warning" onclick="deleteSpectra()">Delete_observed_spectrum</button>
                         </div>
                     </div>
                 </div>
             </div>
             <hr class="my-4">
+            <div class="row form-group">
+                <button id="resetBtn" class="btn btn-danger">Reset values</button>
+            </div>
+            <form id="myForm">
             <div class="row form-group">
                 <div class="col-md-2">
                     <label for="m3d_linelist">Linelist path</label>
@@ -519,13 +570,13 @@
                     <label for="m3d_lmin">Min λ</label>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="4883">
+                    <input type="number" class="form-control" id="m3d_lmin" name="m3d_lmin"  value="6560">
                 </div>
                 <div class="col-sm-1">
                     <label for="m3d_lmax">Max λ</label>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="4885">
+                    <input type="number" class="form-control" id="m3d_lmax" name="m3d_lmax"  value="6565">
                 </div>
                 <div class="col-sm-1">
                     <label for="m3d_deltal">Delta λ</label>
@@ -611,16 +662,16 @@
                     <label for="left_x_boundary">Left λ EW</label>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
+                    <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="6560">
                 </div>
                 <div class="col-md-1">
                     <label for="right_x_boundary">Right λ EW</label>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
+                    <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="6565">
                 </div>
                 <div class="col-md-2">
-                    <button class="btn btn-info" onclick="updateIntegrals()">Calculate EW</button>
+                    <button type="button"  class="btn btn-info" onclick="updateIntegrals()">Calculate EW</button>
                 </div>
             </div>
             <div class="row form-group">
@@ -634,7 +685,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
+                    <button type="button"  class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
                 </div>
                 <div class="col-md-2" id="tsFields">
                     <label for="synthesiseMolecules">Include molecules (slow!):</label>
@@ -643,6 +694,7 @@
                     <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
                 </div>
             </div>
+            </form>
             <div id="integral_synthetic"></div>
             <div id="integral_observed"></div>
             <button id="toggleColumnsButton" class="btn btn-sm">Hide Line Buttons</button>
