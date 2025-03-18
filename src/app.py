@@ -452,7 +452,7 @@ def get_plot_synthetic_spectrum():
     loggf_limit = float(data['loggf_limit'])
     linelist_path = data['linelist_path']
     code_type = data['code_type']
-    synthesise_molecules = data['synthesiseMolecules'],
+    synthesise_molecules = data['synthesiseMolecules']
     snr = float(data['snr'])
     #print("get_plot_m3d")
 
@@ -502,10 +502,14 @@ def get_plot_synthetic_spectrum():
         wavelength_observed = np.asarray(wavelength_observed)
         wavelength_observed = apply_doppler_correction(wavelength_observed, obs_rv)
 
-        # cut the observed spectra to the same range as the synthetic spectra
-        wavelength_observed, flux_observed = zip(*[(wavelength_observed[i], flux_observed[i]) for i in range(len(wavelength_observed)) if lmin - 2 <= wavelength_observed[i] <= lmax + 2])
-        # convert to lists
-        wavelength_observed, flux_observed = list(wavelength_observed), list(flux_observed)
+        # check that wavelength_observed has any values within the range of lmin and lmax
+        if np.any((wavelength_observed >= lmin) & (wavelength_observed <= lmax)):
+            # cut the observed spectra to the same range as the synthetic spectra
+            wavelength_observed, flux_observed = zip(*[(wavelength_observed[i], flux_observed[i]) for i in range(len(wavelength_observed)) if lmin - 2 <= wavelength_observed[i] <= lmax + 2])
+            # convert to lists
+            wavelength_observed, flux_observed = list(wavelength_observed), list(flux_observed)
+        else:
+            wavelength_observed, flux_observed = [], []
     else:
         wavelength_observed, flux_observed = [], []
     fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
@@ -517,7 +521,7 @@ def get_plot_synthetic_spectrum():
 def download_data():
     data = request.form.get('data')
     data = json.loads(data)
-    teff = int(data.get('teff'))
+    teff = float(data.get('teff'))
     logg = round(float(data.get('logg')), 2)
     feh = round(float(data.get('feh')), 2)
     #vmic = round(float(data.get('vmic')), 2)
@@ -552,7 +556,7 @@ def download_data():
     output.close()
 
     response = make_response(csv_data)
-    response.headers['Content-Disposition'] = f'attachment; filename=synthetic_spectra_{teff}_{logg}_{feh}.csv'
+    response.headers['Content-Disposition'] = f'attachment; filename=synthetic_spectra_{int(teff)}_{logg}_{feh}.csv'
     response.headers['Content-Type'] = 'text/csv'
     return response
 
@@ -563,6 +567,95 @@ MINI FIT SPECTRUM
 @app.route('/mini_fit')
 def render_html_mini_fit():
     return render_template('mini_fit.html')
+
+
+@app.route('/mini_fit_synthetic_spectrum', methods=['POST'])
+def mini_fit_synthetic_spectrum():
+    data = request.json
+    teff = float(data['teff'])
+    logg = float(data['logg'])
+    feh = float(data['feh'])
+    vmic = float(data['vmic'])
+    lmin = float(data['lmin'])
+    lmax = float(data['lmax'])
+    ldelta = float(data['deltal'])
+    nlte_element = data['nlte_element']
+    nlte_iter = int(data['nlte_iter'])
+    xfeabundances = data['m3d_xfeabundances']
+    vmac = float(data['vmac'])
+    resolution = float(data['resolution'])
+    rotation = float(data['rotation'])
+    obs_rv = float(data['obs_rv'])
+    loggf_limit = float(data['loggf_limit'])
+    linelist_path = data['linelist_path']
+    code_type = data['code_type']
+    synthesise_molecules = data['synthesiseMolecules']
+    left_boundary = float(data['left_boundary'])
+    right_boundary = float(data['right_boundary'])
+    fit_rv = data['fit_rv']
+    bound_min_rv = float(data['bound_min_rv'])
+    bound_max_rv = float(data['bound_max_rv'])
+    fit_vmac = data['fit_vmac']
+    bound_min_vmac = float(data['bound_min_vmac'])
+    bound_max_vmac = float(data['bound_max_vmac'])
+    fit_rotation = data['fit_rotation']
+    bound_min_rotation = float(data['bound_min_rotation'])
+    bound_max_rotation = float(data['bound_max_rotation'])
+
+    element_abundances = {}
+
+    xfeabundances = xfeabundances.split("\n")
+    for xfeabundance in xfeabundances:
+        if xfeabundance != "":
+            element, abundance = xfeabundance.split(" ")
+            # convert element to element name
+            # try to convert to int
+            try:
+                element = int(element)
+                element_name = periodic_table[element]
+            except ValueError:
+                # if it fails, it is a string
+                element_name = element.lower().capitalize()
+            element_abundances[element_name] = float(abundance)
+
+    if code_type.lower() == 'm3d':
+        wavelength, flux, parsed_linelist_info = call_m3d(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+                                                          nlte_iter, element_abundances, vmac, rotation, resolution,
+                                                          loggf_limit=loggf_limit, linelist_path=linelist_path)
+    elif code_type.lower() == 'ts':
+        wavelength, flux, parsed_linelist_info = call_ts(teff, logg, feh, vmic, lmin, lmax, ldelta, nlte_element,
+                                                          element_abundances, vmac, rotation, resolution,
+                                                          loggf_limit=loggf_limit, linelist_path=linelist_path,
+                                                          synthesise_molecules=synthesise_molecules)
+
+    parsed_linelist_dict = []
+    for i, (wavelength_element, element_linelist, loggf) in enumerate(parsed_linelist_info):
+        parsed_linelist_dict.append({"wavelength": wavelength_element, "element": element_linelist, "loggf": loggf,
+                                     "name": f"{wavelength_element:.2f} {element_linelist} {loggf:.3f}"})
+
+    wavelength = np.asarray(wavelength)
+    flux = np.asarray(flux)
+
+    # we need to resample back to delta lambda
+    wavelength, flux = resample_spectrum(wavelength, flux, ldelta)
+
+
+    if data_results_storage["observed_spectra"]:
+        wavelength_observed = data_results_storage['observed_spectra']["wavelength"]
+        flux_observed = data_results_storage['observed_spectra']["flux"]
+        wavelength_observed = np.asarray(wavelength_observed)
+        wavelength_observed = apply_doppler_correction(wavelength_observed, obs_rv)
+
+        # cut the observed spectra to the same range as the synthetic spectra
+        wavelength_observed, flux_observed = zip(*[(wavelength_observed[i], flux_observed[i]) for i in range(len(wavelength_observed)) if lmin - 2 <= wavelength_observed[i] <= lmax + 2])
+        # convert to lists
+        wavelength_observed, flux_observed = list(wavelength_observed), list(flux_observed)
+    else:
+        wavelength_observed, flux_observed = [], []
+    fig = plot.plot_synthetic_data(wavelength, flux, lmin, lmax, wavelength_observed, flux_observed)
+    data_results_storage['synthetic_spectra']["wavelength"] = list(wavelength)
+    data_results_storage['synthetic_spectra']["flux"] = list(flux)
+    return jsonify({"data": fig.to_dict()["data"], "layout": fig.to_dict()["layout"], "columns": parsed_linelist_dict})
 
 """
 PLOT OBSERVED SPECTRA
@@ -831,6 +924,14 @@ def upload_spectra():
     # now route to analyse_results
     #return redirect(url_for('generate_synthetic_spectrum'))
     return jsonify({'message': 'Upload successful', 'status': 'success'})
+
+@app.route('/delete_observed_spectra', methods=['POST'])
+def delete_observed_spectra():
+    # Get the uploaded files
+    data_results_storage['observed_spectra'] = {}
+    #data_results_storage['observed_spectra']["wavelength"] = []
+    #data_results_storage['observed_spectra']["flux"] = []
+    return jsonify({'message': 'Delete successful', 'status': 'success'})
 
 @app.route('/upload_synthetic_spectra', methods=['POST'])
 def upload_spectra_synthetic():

@@ -232,6 +232,43 @@
     });
     });
 
+    function deleteSpectra() {
+        displayNotification("Deleting...", 3000, "blue"); // Example: blue for processing
+        $.ajax({
+            url: '/delete_observed_spectra',
+            type: 'POST',
+            success: function(response) {
+                console.log('Delete successful');
+                // Handle success
+                displayNotification("Delete success!", 3000, "green"); // Example: blue for processing
+            },
+            error: function(xhr, status, error) {
+                console.log('Delete error');
+                // Handle error
+                displayNotification("Delete error :(", 3000, "red"); // Example: blue for processing
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const columnsDiv = document.getElementById('columns');
+      const toggleButton = document.getElementById('toggleColumnsButton');
+
+      toggleButton.addEventListener('click', function() {
+        // Check current display style
+        if (columnsDiv.style.display === 'none') {
+          // Show the div
+          columnsDiv.style.display = 'block';
+          // Update button text
+          toggleButton.textContent = 'Hide Line Buttons';
+        } else {
+          // Hide the div
+          columnsDiv.style.display = 'none';
+          // Update button text
+          toggleButton.textContent = 'Show Line Buttons';
+        }
+      });
+    });
 
     function displayNotification(message, duration, color) {
         const notification = document.getElementById("notification");
@@ -339,6 +376,35 @@
         }
     });
 }
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectEl = document.getElementById('code_type');
+    const tsFields = document.getElementById('tsFields');
+    const tsFields2 = document.getElementById('tsFields2');
+    const m3dFields = document.getElementById('m3dFields');
+    const m3dFields2 = document.getElementById('m3dFields2');
+
+    function toggleFields() {
+      if (selectEl.value === 'TS') {
+        tsFields.style.display = 'flex';   // or 'block', depending on your layout
+        tsFields2.style.display = 'flex';  // or 'block', depending on your layout
+        m3dFields.style.display = 'none';
+        m3dFields2.style.display = 'none';
+      } else {
+        tsFields.style.display = 'none';
+        tsFields2.style.display = 'none';
+        m3dFields.style.display = 'flex';
+        m3dFields2.style.display = 'flex';
+      }
+    }
+
+    // Trigger the toggle once on page load (in case TS is default)
+    toggleFields();
+
+    // Toggle on change
+    selectEl.addEventListener('change', toggleFields);
+  });
 </script>
 </head>
 <body>
@@ -394,7 +460,7 @@
                                 <input type="file" name="file">
                             </div>
                             <div class="col-4"> <!-- Adjust the size as needed -->
-                                <input type="submit" value="Upload observed spectra" class="btn btn-primary">
+                                <input type="submit" value="Upload observed spectrum" class="btn btn-primary">
                             </div>
                         </div>
                     </form>
@@ -404,6 +470,15 @@
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="obs_rv" name="obs_rv" value="0.0">
+                </div>
+                <div class="col-md-8">
+                    <div class="row"> <!-- Ensures elements are in a flex row -->
+                        <div class="col-8">
+                        </div>
+                        <div class="col-4"> <!-- Adjust the size as needed -->
+                            <button class="btn btn-danger" onclick="deleteSpectra()">Delete_observed_spectrum</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <hr class="my-4">
@@ -510,10 +585,10 @@
                         <option>Y</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="m3dFields">
                     <label for="m3d_nlte_iter">NLTE iterations (M3D only):</label>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="m3dFields2">
                     <input type="number" class="form-control" id="m3d_nlte_iter" name="m3d_nlte_iter" value="10">
                 </div>
             </div>
@@ -561,15 +636,16 @@
                 <div class="col-md-2">
                     <button class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="tsFields">
                     <label for="synthesiseMolecules">Include molecules (slow!):</label>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="tsFields2">
                     <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
                 </div>
             </div>
             <div id="integral_synthetic"></div>
             <div id="integral_observed"></div>
+            <button id="toggleColumnsButton" class="btn btn-sm">Hide Line Buttons</button>
             <div id="columns"></div>
             <div id="plot-container"></div>
             <form id="downloadForm" method="POST" action="/download_data" style="display: none;">

@@ -75,11 +75,21 @@
         linelist_path: document.getElementById("m3d_linelist").value,
         code_type: document.getElementById("code_type").value,
         synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
-        snr: document.getElementById("m3d_snr").value
+        left_boundary: document.getElementById("left_x_boundary").value,
+        right_boundary: document.getElementById("right_x_boundary").value,
+        fit_rv: document.getElementById("fit_rv").checked,
+        bound_min_rv: document.getElementById("bound_min_rv").value,
+        bound_max_rv: document.getElementById("bound_max_rv").value,
+        fit_vmac: document.getElementById("fit_vmac").checked,
+        bound_min_vmac: document.getElementById("bound_min_vmac").value,
+        bound_max_vmac: document.getElementById("bound_max_vmac").value,
+        fit_rotation: document.getElementById("fit_rotation").checked,
+        bound_min_rotation: document.getElementById("bound_min_rotation").value,
+        bound_max_rotation: document.getElementById("bound_max_rotation").value,
     };
 
     $.ajax({
-        url: '/get_plot_synthetic_spectrum',
+        url: '/mini_fit_synthetic_spectrum',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
@@ -196,7 +206,7 @@
         linelist_path: document.getElementById("m3d_linelist").value,
         code_type: document.getElementById("code_type").value,
         synthesiseMolecules: document.getElementById("synthesiseMolecules").checked,
-        snr: document.getElementById("m3d_snr").value
+        snr: 0
     };
 
         // Set the hidden input value to the JSON string
@@ -384,7 +394,7 @@
     <div class="container">
         <div class="jumbotron">
             <h1 class="display-4"></h1>
-            <p class="lead">Generate synthetic spectra and overplot observed one.</p>
+            <p class="lead">Fit synthetic spectra for a specific stellar parameters by chaning RV/vmac/rotation.</p>
             <hr class="my-4">
             <div class="row form-group">
                 <div class="col-md-8">
@@ -478,12 +488,6 @@
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="m3d_resolution" name="m3d_resolution"  value="0">
                 </div>
-                <div class="col-sm-1">
-                    <label for="m3d_snr">SNR (0=perfect)</label>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" class="form-control" id="m3d_snr" name="m3d_snr"  value="0">
-                </div>
             </div>
             <div class="row form-group">
                 <div class="col-md-2">
@@ -533,19 +537,16 @@
                     <input type="number" class="form-control" id="m3d_loggf_limit" name="m3d_loggf_limit" value="-100">
                 </div>
                 <div class="col-md-1">
-                    <label for="left_x_boundary">Left λ EW</label>
+                    <label for="left_x_boundary">Left λ bound</label>
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="left_x_boundary" name="left_x_boundary" value="4883.55">
                 </div>
                 <div class="col-md-1">
-                    <label for="right_x_boundary">Right λ EW</label>
+                    <label for="right_x_boundary">Right λ bound</label>
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control" id="right_x_boundary" name="right_x_boundary" value="4883.8">
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-info" onclick="updateIntegrals()">Calculate EW</button>
                 </div>
             </div>
             <div class="row form-group">
@@ -559,7 +560,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button class="btn btn-custom" onclick="loadPlot2()">Load Plot</button>
+                    <button class="btn btn-custom" onclick="loadPlot2()">Fit Spectra</button>
                 </div>
                 <div class="col-md-2">
                     <label for="synthesiseMolecules">Include molecules (slow!):</label>
@@ -571,10 +572,53 @@
             <hr class="my-4">
             <div class="row form-group">
                 <div class="col-md-2">
-                    <label for="synthesiseMolecules">Include molecules (slow!):</label>
+                    <label for="fit_rv">Fit RV:</label>
                 </div>
                 <div class="col-md-2">
-                    <input type="checkbox" class="form-check-input" id="synthesiseMolecules" name="synthesiseMolecules">
+                    <input type="checkbox" class="form-check-input" id="fit_rv" name="fit_rv" checked>
+                </div>
+                <div class="col-sm-1">
+                    <label for="bound_min_rv">RV bounds</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_min_rv" name="bound_min_rv" value="-1">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_max_rv" name="bound_max_rv" value="1">
+                </div>
+            </div>
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label for="fit_rv">Fit Vmac:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="fit_vmac" name="fit_vmac" checked>
+                </div>
+                <div class="col-sm-1">
+                    <label for="bound_min_vmac">Vmac bounds</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_min_vmac" name="bound_min_vmac" value="0">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_max_vmac" name="bound_max_vmac" value="15">
+                </div>
+            </div>
+            <div class="row form-group">
+                <div class="col-md-2">
+                    <label for="fit_rv">Fit rotation:</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="checkbox" class="form-check-input" id="fit_rotation" name="fit_rotation">
+                </div>
+                <div class="col-sm-1">
+                    <label for="bound_min_rotation">Rotation bounds</label>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_min_rotation" name="bound_min_rotation" value="0">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="bound_max_rotation" name="bound_max_rotation" value="15">
                 </div>
             </div>
             <div id="integral_synthetic"></div>
