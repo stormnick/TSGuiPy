@@ -377,7 +377,21 @@
     });
 }
 
+    let selectEl, tsFields, tsFields2, m3dFields, m3dFields2;
 
+    function toggleFields() {
+      if (selectEl.value === 'TS') {
+        tsFields.style.display = 'block';   // or 'block', depending on your layout
+        tsFields2.style.display = 'block';  // or 'block', depending on your layout
+        m3dFields.style.display = 'none';
+        m3dFields2.style.display = 'none';
+      } else {
+        tsFields.style.display = 'none';
+        tsFields2.style.display = 'none';
+        m3dFields.style.display = 'block';
+        m3dFields2.style.display = 'block';
+      }
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
       const form = document.getElementById("myForm");
@@ -420,37 +434,27 @@
           localStorage.removeItem(el.id);
         });
         form.reset();
+        toggleFields();
       });
     });
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const selectEl = document.getElementById('code_type');
-    const tsFields = document.getElementById('tsFields');
-    const tsFields2 = document.getElementById('tsFields2');
-    const m3dFields = document.getElementById('m3dFields');
-    const m3dFields2 = document.getElementById('m3dFields2');
+    document.addEventListener('DOMContentLoaded', function() {
+        selectEl   = document.getElementById('code_type');
+        tsFields   = document.getElementById('tsFields');
+        tsFields2  = document.getElementById('tsFields2');
+        m3dFields  = document.getElementById('m3dFields');
+        m3dFields2 = document.getElementById('m3dFields2');
 
-    function toggleFields() {
-      if (selectEl.value === 'TS') {
-        tsFields.style.display = 'block';   // or 'block', depending on your layout
-        tsFields2.style.display = 'block';  // or 'block', depending on your layout
-        m3dFields.style.display = 'none';
-        m3dFields2.style.display = 'none';
-      } else {
-        tsFields.style.display = 'none';
-        tsFields2.style.display = 'none';
-        m3dFields.style.display = 'block';
-        m3dFields2.style.display = 'block';
-      }
-    }
 
-    // Trigger the toggle once on page load (in case TS is default)
-    toggleFields();
-    console.log(selectEl.value)
+        // Trigger the toggle once on page load (in case TS is default)
+        toggleFields();
+        console.log(selectEl.value)
 
-    // Toggle on change
-    selectEl.addEventListener('change', toggleFields);
-  });
+        // Toggle on change
+        selectEl.addEventListener('change', toggleFields);
+    });
+
+
 
 </script>
 </head>
